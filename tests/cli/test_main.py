@@ -156,11 +156,13 @@ def test_chat_command(monkeypatch):
 
 
 def test_history_command(monkeypatch):
+    from datetime import datetime
     from mailbender.cli import main
 
     class Row:
         run_type = "main"; uid = "1"; step = "classify"
         result = "success"; detail = "Newsletter"
+        created_at = datetime(2026, 6, 12, 9, 30, 0)
 
     class FakeRepo:
         def recent_runs(self, limit=50):
@@ -170,14 +172,17 @@ def test_history_command(monkeypatch):
     result = runner.invoke(app, ["history"])
     assert result.exit_code == 0
     assert "classify" in result.stdout
+    assert "2026-06-12" in result.stdout
 
 
 def test_audit_command(monkeypatch):
+    from datetime import datetime
     from mailbender.cli import main
 
     class Row:
         actor = "scheduler"; action = "draft_append"
         target = "uid-1"; result = "success"
+        created_at = datetime(2026, 6, 12, 9, 30, 0)
 
     class FakeRepo:
         def recent_audit(self, limit=50):
@@ -187,6 +192,7 @@ def test_audit_command(monkeypatch):
     result = runner.invoke(app, ["audit"])
     assert result.exit_code == 0
     assert "draft_append" in result.stdout
+    assert "2026-06-12" in result.stdout
 
 
 def test_priorities_command(monkeypatch):

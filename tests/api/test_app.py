@@ -91,15 +91,17 @@ def test_priorities_endpoint():
 
 
 def test_history_and_audit_endpoints():
+    from datetime import datetime
     app = create_app(api_token="t")
+    ts = datetime(2026, 6, 12, 9, 30, 0)
 
     class RunRow:
         run_type = "main"; uid = "1"; step = "classify"
-        result = "success"; detail = "X"
+        result = "success"; detail = "X"; created_at = ts
 
     class AuditRow:
         actor = "scheduler"; action = "draft_append"
-        target = "1"; result = "success"
+        target = "1"; result = "success"; created_at = ts
 
     class FakeRepo:
         def recent_runs(self, limit):
@@ -113,9 +115,11 @@ def test_history_and_audit_endpoints():
     h = client.get("/history?limit=5", headers={"Authorization": "Bearer t"})
     assert h.status_code == 200
     assert h.json()[0]["step"] == "classify"
+    assert h.json()[0]["created_at"] == "2026-06-12T09:30:00"
     a = client.get("/audit", headers={"Authorization": "Bearer t"})
     assert a.status_code == 200
     assert a.json()[0]["action"] == "draft_append"
+    assert a.json()[0]["created_at"] == "2026-06-12T09:30:00"
 
 
 def test_mapping_endpoints():

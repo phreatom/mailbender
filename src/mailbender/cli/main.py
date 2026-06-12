@@ -144,8 +144,8 @@ def history(limit: int = 50):
     """Show recent run history."""
     repo = _make_repo()
     for r in repo.recent_runs(limit):
-        typer.echo(f"{r.run_type:8} {str(r.uid):8} {r.step:10} "
-                   f"{r.result:8} {r.detail}")
+        typer.echo(f"{r.created_at:%Y-%m-%d %H:%M} {r.run_type:8} "
+                   f"{str(r.uid):8} {r.step:10} {r.result:8} {r.detail}")
 
 
 @app.command()
@@ -153,7 +153,8 @@ def audit(limit: int = 50):
     """Show recent audit-log entries."""
     repo = _make_repo()
     for r in repo.recent_audit(limit):
-        typer.echo(f"{r.actor:10} {r.action:16} {r.target:12} {r.result}")
+        typer.echo(f"{r.created_at:%Y-%m-%d %H:%M} {r.actor:10} "
+                   f"{r.action:16} {r.target:12} {r.result}")
 
 
 @app.command()

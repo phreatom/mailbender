@@ -15,10 +15,15 @@ def run_main(runner) -> dict:
     return {"status": "ok"}
 
 
+def _iso(dt):
+    return dt.isoformat() if dt else None
+
+
 def recent_history(repo, limit: int) -> list[dict]:
     return [
         {"run_type": r.run_type, "uid": r.uid, "step": r.step,
-         "result": r.result, "detail": r.detail}
+         "result": r.result, "detail": r.detail,
+         "created_at": _iso(r.created_at)}
         for r in repo.recent_runs(limit)
     ]
 
@@ -26,7 +31,7 @@ def recent_history(repo, limit: int) -> list[dict]:
 def recent_audit(repo, limit: int) -> list[dict]:
     return [
         {"actor": r.actor, "action": r.action, "target": r.target,
-         "result": r.result}
+         "result": r.result, "created_at": _iso(r.created_at)}
         for r in repo.recent_audit(limit)
     ]
 
