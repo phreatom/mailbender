@@ -64,3 +64,19 @@ class Repository:
                 .order_by(desc(RunHistory.created_at))
                 .limit(limit))
         return self.session.execute(stmt).scalars().all()
+
+    def recent_audit(self, limit: int = 50):
+        stmt = (select(AuditLog)
+                .order_by(desc(AuditLog.created_at))
+                .limit(limit))
+        return self.session.execute(stmt).scalars().all()
+
+    def processed_by_priority(self):
+        order = case(
+            (ProcessedMail.priority == "high", 0),
+            (ProcessedMail.priority == "medium", 1),
+            (ProcessedMail.priority == "low", 2),
+            else_=3,
+        )
+        stmt = select(ProcessedMail).order_by(order, ProcessedMail.uid)
+        return self.session.execute(stmt).scalars().all()

@@ -55,3 +55,19 @@ def test_last_run_at_returns_none_then_timestamp(repo):
     repo.record_run_step("main", None, "run", "success")
     assert repo.last_run_at("main") is not None
     assert repo.last_run_at("feedback") is None
+
+
+def test_recent_audit_returns_entries(repo):
+    from mailagent.audit.log import AuditLogger
+    AuditLogger(repo.session).record("scheduler", "draft_append", "uid-1")
+    rows = repo.recent_audit(limit=10)
+    assert len(rows) == 1
+    assert rows[0].action == "draft_append"
+
+
+def test_processed_by_priority_orders_high_first(repo):
+    repo.mark_processed("a", "X", "low", False, False)
+    repo.mark_processed("b", "X", "high", False, False)
+    repo.mark_processed("c", "X", "medium", False, False)
+    order = [p.priority for p in repo.processed_by_priority()]
+    assert order == ["high", "medium", "low"]
