@@ -137,3 +137,19 @@ def test_run_style_command(monkeypatch):
     result = runner.invoke(app, ["run-style"])
     assert result.exit_code == 0
     assert fake.called is True
+
+
+def test_chat_command(monkeypatch):
+    from mailagent.cli import main
+    from mailagent.chat.chat import ChatAnswer, ChatSource
+
+    class FakeChat:
+        def ask(self, question):
+            return ChatAnswer(text="Sarah approved it.",
+                              sources=[ChatSource(uid="1", subject="Budget")])
+
+    monkeypatch.setattr(main, "_make_chat", lambda: FakeChat())
+    result = runner.invoke(app, ["chat", "What did Sarah say?"])
+    assert result.exit_code == 0
+    assert "Sarah approved it." in result.stdout
+    assert "1" in result.stdout

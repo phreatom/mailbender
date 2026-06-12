@@ -23,6 +23,17 @@ def _load_config():
     return load_config()
 
 
+def _make_chat():
+    from mailagent.config import load_config
+    from mailagent.llm.factory import make_provider
+    from mailagent.chat.chat import Chat
+    cfg = load_config()
+    session = _make_session(cfg)
+    api_key = cfg.llm_api_key.get_secret_value() if cfg.llm_api_key else None
+    provider = make_provider(cfg.llm_provider, api_key)
+    return Chat(provider, session)
+
+
 def _make_runner():
     from mailagent.config import load_config
     from mailagent.imap.client import ImapClient
@@ -115,6 +126,17 @@ def run_feedback():
     """Run the draft-vs-sent feedback pass now."""
     _make_runner().run_feedback()
     typer.echo("Feedback run complete.")
+
+
+@app.command()
+def chat(question: str):
+    """Ask a question about the mailbox."""
+    answer = _make_chat().ask(question)
+    typer.echo(answer.text)
+    if answer.sources:
+        typer.echo("Quellen:")
+        for s in answer.sources:
+            typer.echo(f"  [{s.uid}] {s.subject}")
 
 
 if __name__ == "__main__":
