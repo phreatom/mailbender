@@ -1,4 +1,4 @@
-from mailagent.llm.provider import Email
+from mailbender.llm.provider import Email
 
 
 class FakeLLMProvider:

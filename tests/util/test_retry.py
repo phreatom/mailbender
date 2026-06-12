@@ -1,5 +1,5 @@
 import pytest
-from mailagent.util.retry import retry
+from mailbender.util.retry import retry
 
 
 def test_retry_returns_on_first_success():

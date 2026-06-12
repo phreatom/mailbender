@@ -1,5 +1,5 @@
-from mailagent.llm.fake import FakeLLMProvider
-from mailagent.llm.provider import Email
+from mailbender.llm.fake import FakeLLMProvider
+from mailbender.llm.provider import Email
 
 
 def test_fake_classify_returns_configured_category():

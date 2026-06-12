@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-POSTGRES_URL = "postgresql+psycopg://postgres:postgres@localhost:55432/mailagent_test"
+POSTGRES_URL = "postgresql+psycopg://postgres:postgres@localhost:55432/mailbender_test"
 
 
 @pytest.fixture(scope="session")

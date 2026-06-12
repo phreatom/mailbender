@@ -1,8 +1,8 @@
 from sqlalchemy import select
-from mailagent.store.models import FolderMapping
-from mailagent.store.repository import Repository
-from mailagent.learning.style_learner import StyleLearner
-from mailagent.scheduler.runner import Runner
+from mailbender.store.models import FolderMapping
+from mailbender.store.repository import Repository
+from mailbender.learning.style_learner import StyleLearner
+from mailbender.scheduler.runner import Runner
 
 DEFAULT_REPLY_CATEGORY = "Antwort nötig"
 

@@ -9,10 +9,10 @@ down_revision = None
 
 def upgrade():
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
-    from mailagent.store.models import Base
+    from mailbender.store.models import Base
     Base.metadata.create_all(op.get_bind())
 
 
 def downgrade():
-    from mailagent.store.models import Base
+    from mailbender.store.models import Base
     Base.metadata.drop_all(op.get_bind())

@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, Header, Body
-from mailagent.api import routes
+from mailbender.api import routes
 
 
 def create_app(api_token: str) -> FastAPI:
-    app = FastAPI(title="Mailagent")
+    app = FastAPI(title="Mailbender")
     app.state.api_token = api_token
     app.state.repo_factory = None
     app.state.runner_factory = None

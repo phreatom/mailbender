@@ -1,5 +1,5 @@
-from mailagent.llm.factory import make_provider
-from mailagent.llm.fake import FakeLLMProvider
+from mailbender.llm.factory import make_provider
+from mailbender.llm.fake import FakeLLMProvider
 
 
 def test_factory_returns_fake():

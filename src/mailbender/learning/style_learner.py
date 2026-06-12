@@ -1,5 +1,5 @@
 from sqlalchemy import select, desc
-from mailagent.store.models import StyleExample
+from mailbender.store.models import StyleExample
 
 
 class StyleLearner:

@@ -2,7 +2,7 @@ import smtplib
 import time
 from email.message import EmailMessage
 import pytest
-from mailagent.imap.client import ImapClient
+from mailbender.imap.client import ImapClient
 
 
 def _send(subject, body):
@@ -38,7 +38,7 @@ def test_append_draft(imap):
 
 
 def test_connect_retries_transient_failure(monkeypatch):
-    import mailagent.imap.client as mod
+    import mailbender.imap.client as mod
 
     monkeypatch.setattr(mod.time, "sleep", lambda s: None)
     state = {"n": 0}

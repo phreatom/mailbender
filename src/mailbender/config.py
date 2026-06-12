@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ImapConfig(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="MAILAGENT_IMAP_")
+    model_config = SettingsConfigDict(env_prefix="MAILBENDER_IMAP_")
     host: str
     user: str
     password: SecretStr
@@ -13,7 +13,7 @@ class ImapConfig(BaseSettings):
 
 
 class Config(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="MAILAGENT_")
+    model_config = SettingsConfigDict(env_prefix="MAILBENDER_")
     database_url: str
     llm_provider: str = "openai"
     llm_api_key: SecretStr | None = None

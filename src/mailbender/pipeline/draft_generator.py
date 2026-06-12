@@ -1,5 +1,5 @@
-from mailagent.llm.provider import LLMProvider, Email
-from mailagent.store.models import ReferenceDraft
+from mailbender.llm.provider import LLMProvider, Email
+from mailbender.store.models import ReferenceDraft
 
 
 class DraftGenerator:

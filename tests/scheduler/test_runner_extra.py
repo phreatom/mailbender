@@ -1,8 +1,8 @@
 import pytest
-from mailagent.store.models import Base, StyleExample
-from mailagent.llm.fake import FakeLLMProvider
-from mailagent.llm.provider import Email
-from mailagent.scheduler.runner import Runner
+from mailbender.store.models import Base, StyleExample
+from mailbender.llm.fake import FakeLLMProvider
+from mailbender.llm.provider import Email
+from mailbender.scheduler.runner import Runner
 from sqlalchemy import select
 
 

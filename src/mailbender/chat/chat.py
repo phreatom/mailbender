@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from sqlalchemy import select
-from mailagent.llm.provider import LLMProvider
-from mailagent.store.models import MailIndex
+from mailbender.llm.provider import LLMProvider
+from mailbender.store.models import MailIndex
 
 
 @dataclass

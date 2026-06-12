@@ -1,4 +1,4 @@
-from mailagent.pipeline.mover import Mover
+from mailbender.pipeline.mover import Mover
 
 
 class FakeImap:

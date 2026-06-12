@@ -1,8 +1,8 @@
 import pytest
-from mailagent.store.models import Base, ReferenceDraft
-from mailagent.llm.fake import FakeLLMProvider
-from mailagent.llm.provider import Email
-from mailagent.pipeline.draft_generator import DraftGenerator
+from mailbender.store.models import Base, ReferenceDraft
+from mailbender.llm.fake import FakeLLMProvider
+from mailbender.llm.provider import Email
+from mailbender.pipeline.draft_generator import DraftGenerator
 from sqlalchemy import select
 
 

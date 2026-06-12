@@ -1,4 +1,4 @@
-from mailagent.store.models import (
+from mailbender.store.models import (
     Base, ProcessedMail, Category, FolderMapping, StyleExample,
     ReferenceDraft, RunHistory, AuditLog, MailIndex,
 )

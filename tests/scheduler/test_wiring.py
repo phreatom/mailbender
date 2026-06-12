@@ -1,8 +1,8 @@
 import pytest
-from mailagent.store.models import Base, FolderMapping, StyleExample
-from mailagent.store.repository import Repository
-from mailagent.llm.fake import FakeLLMProvider
-from mailagent.scheduler.wiring import build_runner
+from mailbender.store.models import Base, FolderMapping, StyleExample
+from mailbender.store.repository import Repository
+from mailbender.llm.fake import FakeLLMProvider
+from mailbender.scheduler.wiring import build_runner
 
 
 class FakeImap:

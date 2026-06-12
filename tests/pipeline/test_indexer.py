@@ -1,9 +1,9 @@
 import pytest
 from sqlalchemy import select
-from mailagent.store.models import Base, MailIndex
-from mailagent.llm.fake import FakeLLMProvider
-from mailagent.llm.provider import Email
-from mailagent.pipeline.indexer import Indexer
+from mailbender.store.models import Base, MailIndex
+from mailbender.llm.fake import FakeLLMProvider
+from mailbender.llm.provider import Email
+from mailbender.pipeline.indexer import Indexer
 
 
 @pytest.fixture

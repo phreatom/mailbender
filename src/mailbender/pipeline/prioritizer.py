@@ -1,4 +1,4 @@
-from mailagent.llm.provider import LLMProvider, Email
+from mailbender.llm.provider import LLMProvider, Email
 
 VALID = {"high", "medium", "low"}
 

@@ -1,8 +1,8 @@
 import time
 
 from imapclient import IMAPClient
-from mailagent.llm.provider import Email
-from mailagent.util.retry import retry
+from mailbender.llm.provider import Email
+from mailbender.util.retry import retry
 import email as email_lib
 
 

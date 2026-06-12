@@ -1,5 +1,5 @@
 from typer.testing import CliRunner
-from mailagent.cli.main import app
+from mailbender.cli.main import app
 
 runner = CliRunner()
 
@@ -11,7 +11,7 @@ def test_version_command():
 
 
 def test_categories_list_command(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
 
     class FakeRepo:
         def list_categories(self):
@@ -45,7 +45,7 @@ class RecordingRepo:
 
 
 def test_add_category_command(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
     repo = RecordingRepo()
     monkeypatch.setattr(main, "_make_repo", lambda: repo)
     result = runner.invoke(app, ["add-category", "Projekt", "--description", "Work"])
@@ -55,7 +55,7 @@ def test_add_category_command(monkeypatch):
 
 
 def test_remove_category_command(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
     repo = RecordingRepo(remove_result=True)
     monkeypatch.setattr(main, "_make_repo", lambda: repo)
     result = runner.invoke(app, ["remove-category", "Werbung"])
@@ -65,7 +65,7 @@ def test_remove_category_command(monkeypatch):
 
 
 def test_remove_missing_category_command_exits_nonzero(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
     repo = RecordingRepo(remove_result=False)
     monkeypatch.setattr(main, "_make_repo", lambda: repo)
     result = runner.invoke(app, ["remove-category", "Nope"])
@@ -73,8 +73,8 @@ def test_remove_missing_category_command_exits_nonzero(monkeypatch):
 
 
 def test_seed_categories_command(monkeypatch):
-    from mailagent.cli import main
-    from mailagent.categories import DEFAULT_CATEGORIES
+    from mailbender.cli import main
+    from mailbender.categories import DEFAULT_CATEGORIES
     repo = RecordingRepo()
     monkeypatch.setattr(main, "_make_repo", lambda: repo)
     result = runner.invoke(app, ["seed-categories"])
@@ -84,7 +84,7 @@ def test_seed_categories_command(monkeypatch):
 
 
 def test_run_command_invokes_run_main(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
 
     class FakeRunner:
         def __init__(self):
@@ -102,7 +102,7 @@ def test_run_command_invokes_run_main(monkeypatch):
 
 
 def test_scheduler_command_invokes_run_loop(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
 
     captured = {}
 
@@ -123,7 +123,7 @@ def test_scheduler_command_invokes_run_loop(monkeypatch):
 
 
 def test_run_style_command(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
 
     class FakeRunner:
         def __init__(self):
@@ -140,8 +140,8 @@ def test_run_style_command(monkeypatch):
 
 
 def test_chat_command(monkeypatch):
-    from mailagent.cli import main
-    from mailagent.chat.chat import ChatAnswer, ChatSource
+    from mailbender.cli import main
+    from mailbender.chat.chat import ChatAnswer, ChatSource
 
     class FakeChat:
         def ask(self, question):
@@ -156,7 +156,7 @@ def test_chat_command(monkeypatch):
 
 
 def test_history_command(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
 
     class Row:
         run_type = "main"; uid = "1"; step = "classify"
@@ -173,7 +173,7 @@ def test_history_command(monkeypatch):
 
 
 def test_audit_command(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
 
     class Row:
         actor = "scheduler"; action = "draft_append"
@@ -190,7 +190,7 @@ def test_audit_command(monkeypatch):
 
 
 def test_priorities_command(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
 
     class Row:
         def __init__(self, uid, priority, category):
@@ -209,7 +209,7 @@ def test_priorities_command(monkeypatch):
 
 
 def test_mapping_commands(monkeypatch):
-    from mailagent.cli import main
+    from mailbender.cli import main
 
     store = {}
 

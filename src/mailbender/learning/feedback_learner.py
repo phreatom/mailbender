@@ -1,6 +1,6 @@
 from difflib import SequenceMatcher
 from sqlalchemy import select
-from mailagent.store.models import ReferenceDraft, StyleExample
+from mailbender.store.models import ReferenceDraft, StyleExample
 
 
 class FeedbackLearner:

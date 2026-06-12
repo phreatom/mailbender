@@ -1,4 +1,4 @@
-from mailagent.store.models import AuditLog
+from mailbender.store.models import AuditLog
 
 
 class AuditLogger:

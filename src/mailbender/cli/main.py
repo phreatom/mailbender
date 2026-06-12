@@ -1,32 +1,32 @@
 import typer
-from mailagent import __version__
-from mailagent.scheduler.loop import run_loop
+from mailbender import __version__
+from mailbender.scheduler.loop import run_loop
 
-app = typer.Typer(help="Mailagent CLI")
+app = typer.Typer(help="Mailbender CLI")
 
 
 def _make_session(cfg):
-    from mailagent.store.db import make_engine, make_session_factory
+    from mailbender.store.db import make_engine, make_session_factory
     engine = make_engine(cfg.database_url)
     return make_session_factory(engine)()
 
 
 def _make_repo():
-    from mailagent.config import load_config
-    from mailagent.store.repository import Repository
+    from mailbender.config import load_config
+    from mailbender.store.repository import Repository
     cfg = load_config()
     return Repository(_make_session(cfg))
 
 
 def _load_config():
-    from mailagent.config import load_config
+    from mailbender.config import load_config
     return load_config()
 
 
 def _make_chat():
-    from mailagent.config import load_config
-    from mailagent.llm.factory import make_provider
-    from mailagent.chat.chat import Chat
+    from mailbender.config import load_config
+    from mailbender.llm.factory import make_provider
+    from mailbender.chat.chat import Chat
     cfg = load_config()
     session = _make_session(cfg)
     api_key = cfg.llm_api_key.get_secret_value() if cfg.llm_api_key else None
@@ -35,10 +35,10 @@ def _make_chat():
 
 
 def _make_runner():
-    from mailagent.config import load_config
-    from mailagent.imap.client import ImapClient
-    from mailagent.llm.factory import make_provider
-    from mailagent.scheduler.wiring import build_runner
+    from mailbender.config import load_config
+    from mailbender.imap.client import ImapClient
+    from mailbender.llm.factory import make_provider
+    from mailbender.scheduler.wiring import build_runner
     cfg = load_config()
     session = _make_session(cfg)
     imap = ImapClient(
@@ -87,7 +87,7 @@ def remove_category(name: str):
 @app.command("seed-categories")
 def seed_categories():
     """Add the default category set (idempotent)."""
-    from mailagent.categories import seed_default_categories
+    from mailbender.categories import seed_default_categories
     repo = _make_repo()
     added = seed_default_categories(repo)
     typer.echo(f"Seeded {added} categories.")

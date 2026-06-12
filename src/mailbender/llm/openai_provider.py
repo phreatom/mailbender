@@ -1,7 +1,7 @@
 import time
 
-from mailagent.llm.provider import Email
-from mailagent.util.retry import retry
+from mailbender.llm.provider import Email
+from mailbender.util.retry import retry
 
 CLASSIFY_PROMPT = (
     "Classify this email into exactly one of these categories: {categories}.\n"

@@ -1,4 +1,4 @@
-from mailagent.llm.fake import FakeLLMProvider
+from mailbender.llm.fake import FakeLLMProvider
 
 
 def make_provider(name: str, api_key):
@@ -6,6 +6,6 @@ def make_provider(name: str, api_key):
         return FakeLLMProvider()
     if name == "openai":
         from openai import OpenAI
-        from mailagent.llm.openai_provider import OpenAIProvider
+        from mailbender.llm.openai_provider import OpenAIProvider
         return OpenAIProvider(client=OpenAI(api_key=api_key))
     raise ValueError(f"Unknown provider: {name}")

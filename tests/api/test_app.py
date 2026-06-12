@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from mailagent.api.app import create_app
+from mailbender.api.app import create_app
 
 
 def test_health_no_auth_required():
@@ -33,7 +33,7 @@ def test_categories_with_valid_token():
 
 
 def test_chat_endpoint(monkeypatch):
-    from mailagent.chat.chat import ChatAnswer, ChatSource
+    from mailbender.chat.chat import ChatAnswer, ChatSource
     app = create_app(api_token="t")
 
     class FakeChat:

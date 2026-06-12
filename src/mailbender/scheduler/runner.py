@@ -1,12 +1,12 @@
-from mailagent.store.repository import Repository
-from mailagent.pipeline.classifier import Classifier
-from mailagent.pipeline.prioritizer import Prioritizer
-from mailagent.pipeline.mover import Mover
-from mailagent.pipeline.draft_generator import DraftGenerator
-from mailagent.pipeline.indexer import Indexer
-from mailagent.audit.log import AuditLogger
-from mailagent.learning.style_learner import StyleLearner
-from mailagent.learning.feedback_learner import FeedbackLearner
+from mailbender.store.repository import Repository
+from mailbender.pipeline.classifier import Classifier
+from mailbender.pipeline.prioritizer import Prioritizer
+from mailbender.pipeline.mover import Mover
+from mailbender.pipeline.draft_generator import DraftGenerator
+from mailbender.pipeline.indexer import Indexer
+from mailbender.audit.log import AuditLogger
+from mailbender.learning.style_learner import StyleLearner
+from mailbender.learning.feedback_learner import FeedbackLearner
 
 
 class Runner:

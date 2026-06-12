@@ -1,5 +1,5 @@
-from mailagent.llm.openai_provider import OpenAIProvider
-from mailagent.llm.provider import Email
+from mailbender.llm.openai_provider import OpenAIProvider
+from mailbender.llm.provider import Email
 
 
 class FakeChatResponse:
@@ -45,8 +45,8 @@ def test_embed_returns_vector():
 
 
 def test_chat_retries_transient_failure(monkeypatch):
-    import mailagent.llm.openai_provider as mod
-    from mailagent.llm.provider import Email
+    import mailbender.llm.openai_provider as mod
+    from mailbender.llm.provider import Email
 
     monkeypatch.setattr(mod.time, "sleep", lambda s: None)
     state = {"n": 0}

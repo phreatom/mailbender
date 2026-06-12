@@ -1,9 +1,9 @@
 import pytest
-from mailagent.store.models import Base
-from mailagent.store.repository import Repository
-from mailagent.llm.fake import FakeLLMProvider
-from mailagent.llm.provider import Email
-from mailagent.scheduler.runner import Runner
+from mailbender.store.models import Base
+from mailbender.store.repository import Repository
+from mailbender.llm.fake import FakeLLMProvider
+from mailbender.llm.provider import Email
+from mailbender.scheduler.runner import Runner
 
 
 class FakeImap:
@@ -62,7 +62,7 @@ def test_main_run_skips_already_processed(session):
 
 def test_main_run_records_history_steps(session):
     from sqlalchemy import select
-    from mailagent.store.models import RunHistory
+    from mailbender.store.models import RunHistory
     inbox = [Email(uid="1", subject="Frage", sender="a@b.c", body="?",
                    message_id="<m1>")]
     imap = FakeImap(inbox)

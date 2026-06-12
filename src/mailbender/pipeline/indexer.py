@@ -1,6 +1,6 @@
 from sqlalchemy.dialects.postgresql import insert
-from mailagent.llm.provider import LLMProvider, Email
-from mailagent.store.models import MailIndex
+from mailbender.llm.provider import LLMProvider, Email
+from mailbender.store.models import MailIndex
 
 
 class Indexer:

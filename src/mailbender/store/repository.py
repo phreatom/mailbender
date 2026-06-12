@@ -1,7 +1,7 @@
 from sqlalchemy import select, func, desc, case
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
-from mailagent.store.models import (
+from mailbender.store.models import (
     ProcessedMail, Category, RunHistory, AuditLog, FolderMapping,
 )
 
