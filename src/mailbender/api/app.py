@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Header, Body
 from mailbender.api import routes
 from mailbender.audit.log import AuditLogger
+from mailbender.categories import seed_default_categories
 
 
 def _audit(app, actor, action, target="", result="success"):
@@ -44,9 +45,11 @@ def create_app(api_token: str) -> FastAPI:
         return routes.chat_answer(chat_obj, question)
 
     @app.post("/run", dependencies=[Depends(require_auth)])
-    def run():
-        _audit(app, "web", "run_triggered", "main")
-        return routes.run_main(app.state.runner_factory())
+    def run(run_type: str = Body("main", embed=True)):
+        if run_type not in routes.RUN_TYPES:
+            raise HTTPException(status_code=422, detail="invalid run_type")
+        _audit(app, "web", "run_triggered", run_type)
+        return routes.run(app.state.runner_factory(), run_type)
 
     @app.get("/priorities", dependencies=[Depends(require_auth)])
     def priorities():
@@ -59,6 +62,27 @@ def create_app(api_token: str) -> FastAPI:
     @app.get("/audit", dependencies=[Depends(require_auth)])
     def audit(limit: int = 50):
         return routes.recent_audit(app.state.repo_factory(), limit)
+
+    @app.post("/categories", dependencies=[Depends(require_auth)])
+    def create_category(name: str = Body(...), description: str = Body("")):
+        result = routes.add_category(app.state.repo_factory(), name, description)
+        _audit(app, "web", "category_add", name)
+        return result
+
+    @app.delete("/categories/{name}", dependencies=[Depends(require_auth)])
+    def delete_category(name: str):
+        removed = routes.remove_category(app.state.repo_factory(), name)
+        if not removed:
+            _audit(app, "web", "category_remove", name, "error")
+            raise HTTPException(status_code=404, detail="No such category")
+        _audit(app, "web", "category_remove", name)
+        return {"removed": True}
+
+    @app.post("/categories/seed", dependencies=[Depends(require_auth)])
+    def seed_categories_endpoint():
+        result = seed_default_categories(app.state.repo_factory())
+        _audit(app, "web", "category_seed")
+        return {"added": result}
 
     @app.get("/mappings", dependencies=[Depends(require_auth)])
     def list_mappings():

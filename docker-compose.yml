@@ -23,7 +23,7 @@ services:
       - "8000:8000"
   scheduler:
     build: .
-    command: ["mailbender", "scheduler"]
+    command: ["mailbender-server", "scheduler"]
     env_file: .env
     depends_on:
       postgres:

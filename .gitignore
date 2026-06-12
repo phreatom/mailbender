@@ -44,3 +44,6 @@ coverage.xml
 
 # Logs
 *.log
+
+# Brainstorming visual companion
+.superpowers/
