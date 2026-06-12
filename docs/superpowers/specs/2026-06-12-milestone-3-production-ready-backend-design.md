@@ -25,6 +25,13 @@ folgt den bestehenden Mustern (`Repository`, `Runner`, `build_runner`,
 `create_app` + injizierte Factories, `AuditLogger`, `cli/main.py`-Helfer,
 Postgres-/GreenMail-Testfixtures). Keine Architektur-Umbauten.
 
+Zusätzlich wird die Anwendung von `mailagent` auf **`mailbender`** umbenannt
+(passend zum Repository-Namen). Das ist eine vollständige Umbenennung — Paket,
+Imports, CLI-Befehl, ENV-Präfix, DB-Name, Docker und Doku. Da der Dienst noch
+nicht produktiv läuft, gibt es keine Rückwärtskompatibilität (keine
+`MAILAGENT_*`-Aliase). Die Umbenennung ist der erste Arbeitsschritt, damit alle
+weiteren M3-Arbeiten direkt im umbenannten Paket landen.
+
 ## Anforderungen (aus Core-Design, in diesem Milestone erfüllt)
 
 - **Web-App-Zugang:** API tatsächlich startbar; Token aus ENV gelesen; Sessions
@@ -40,14 +47,47 @@ Postgres-/GreenMail-Testfixtures). Keine Architektur-Umbauten.
 
 ## Komponenten
 
+### 0. Anwendungs-Umbenennung mailagent → mailbender
+
+Vollständige Umbenennung, als erster Schritt des Milestones, damit alles Weitere
+im neuen Paket entsteht. Betroffen:
+
+- **Paket:** `src/mailagent/` → `src/mailbender/` (Verzeichnis-Rename inkl. aller
+  Untermodule). Alle Imports `mailagent.*` → `mailbender.*` in `src/` und
+  `tests/`.
+- **Tests:** `tests/`-Importe und Testbaum-Bezüge auf `mailbender` umstellen.
+- **pyproject.toml:** `name = "mailbender"`, `[project.scripts] mailbender =
+  "mailbender.cli.main:app"`, `pythonpath`/`packages.find` unverändert auf
+  `src`. `__version__` bleibt `0.1.0` (in `src/mailbender/__init__.py`).
+- **ENV-Präfix:** `MAILAGENT_` → `MAILBENDER_` in `config.py`
+  (`SettingsConfigDict(env_prefix="MAILBENDER_")` für `Config` und
+  `MAILBENDER_IMAP_` für `ImapConfig`). `.env.example` entsprechend umbenennen.
+- **DB-Name:** Default-Datenbank `mailagent` → `mailbender` (in `.env.example`
+  `MAILBENDER_DATABASE_URL`, `docker-compose.yml` `POSTGRES_DB`,
+  `alembic.ini`-URL). Test-DB `mailagent_test` → `mailbender_test`
+  (`tests/conftest.py` `POSTGRES_URL`, `tests/docker-compose.test.yml`).
+- **Migrationen:** `migrations/env.py`-Import (`from mailbender.store.models
+  import Base`) und das ENV-Lookup auf `MAILBENDER_DATABASE_URL`. Vorhandene
+  Migration `migrations/versions/0001_initial.py` ggf. enthaltene
+  `mailagent`-Importe umstellen.
+- **FastAPI-Titel:** `FastAPI(title="Mailbender")` in `api/app.py`.
+- **Docker:** `Dockerfile` `CMD`/`uvicorn`-Pfad auf `mailbender.*`,
+  `docker-compose.yml` `command: ["mailbender", "scheduler"]`.
+- **Doku:** `README.md` und alle `mailagent`-Erwähnungen → `mailbender`.
+
+**Vorgehen:** Verzeichnis per `git mv` umbenennen (History erhalten), dann
+projektweiter Such-/Ersetzlauf `mailagent` → `mailbender` über `src/`, `tests/`
+und die Wurzeldateien, danach Neuinstallation (`pip install -e ".[dev]"`) und
+volle Test-Suite als Verifikation. Keine `MAILAGENT_*`-Rückwärtskompatibilität.
+
 ### 1. API-Produktiv-Bootstrap
 
-**Konfiguration** (`src/mailagent/config.py`): neues Feld
+**Konfiguration** (`src/mailbender/config.py`): neues Feld
 ```
 api_token: SecretStr | None = None     # MAILAGENT_API_TOKEN
 ```
 
-**Bootstrap** — neue Datei `src/mailagent/api/bootstrap.py` mit einer
+**Bootstrap** — neue Datei `src/mailbender/api/bootstrap.py` mit einer
 **parameterlosen** `production_app()`-Factory (das ruft `uvicorn --factory` auf):
 
 1. `cfg = load_config()`.
@@ -71,7 +111,7 @@ funktionieren unverändert. Das `scoped_session` + Remove-Middleware übernimmt
 das Session-Management nur im Produktiv-Pfad. `create_app` bleibt unverändert.
 
 **Deployment** (`Dockerfile`): `CMD` →
-`uvicorn mailagent.api.bootstrap:production_app --factory --host 0.0.0.0 --port 8000`.
+`uvicorn mailbender.api.bootstrap:production_app --factory --host 0.0.0.0 --port 8000`.
 
 **Test:** Unit-Test patcht `load_config` und die Engine-Erzeugung und prüft, dass
 `production_app()` eine App mit gesetztem `api_token` und nicht-`None` Factories
@@ -110,7 +150,7 @@ die CLI-Ausgaben `history`/`audit` ergänzen den **Zeitstempel**
 
 ### 3. Korrektheits-Fixes
 
-**Duplikat-Draft-Schutz** (`src/mailagent/pipeline/draft_generator.py`):
+**Duplikat-Draft-Schutz** (`src/mailbender/pipeline/draft_generator.py`):
 `generate` prüft zuerst, ob bereits ein `ReferenceDraft` mit demselben
 `source_uid` existiert; falls ja, wird **weder** appended **noch** gespeichert
 (idempotent bei Wiederholung). Das schließt den häufigen Wiederholungs-Pfad
@@ -118,7 +158,7 @@ die CLI-Ausgaben `history`/`audit` ergänzen den **Zeitstempel**
 Restfenster (Append ok, anschließender DB-Commit schlägt fehl) wird als für den
 Single-User-Betrieb akzeptabel dokumentiert.
 
-**Retry auf IMAP-Operationen** (`src/mailagent/imap/client.py`): Die
+**Retry auf IMAP-Operationen** (`src/mailbender/imap/client.py`): Die
 eigentlichen `c.move(...)`- und `c.append(...)`-Aufrufe werden in `retry(...)`
 gekapselt (bisher nur `_connect`). `fetch_folder` bleibt durch den
 retry-gekapselten `_connect` abgedeckt.
