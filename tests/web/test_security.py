@@ -50,3 +50,9 @@ def test_csrf_round_trip_and_reject():
     assert s.valid_csrf(s.issue_csrf()) is True
     assert s.valid_csrf(None) is False
     assert s.valid_csrf("nope") is False
+
+
+def test_csrf_token_is_not_a_valid_session():
+    s = make()
+    assert s.valid_session(s.issue_csrf()) is False
+    assert s.valid_csrf(s.issue_session()) is False

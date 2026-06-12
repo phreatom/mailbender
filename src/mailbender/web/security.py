@@ -13,9 +13,10 @@ class WebSecurity:
     rotating the password does not invalidate existing sessions.
     """
 
-    def __init__(self, secret_key: str, password: str):
+    def __init__(self, secret_key: str, password: str | None):
         self._password = password or ""
-        self._serializer = URLSafeTimedSerializer(secret_key, salt="mb-session")
+        self._session_serializer = URLSafeTimedSerializer(secret_key, salt="mb-session")
+        self._csrf_serializer = URLSafeTimedSerializer(secret_key, salt="mb-csrf")
 
     @property
     def login_enabled(self) -> bool:
@@ -27,25 +28,25 @@ class WebSecurity:
         return hmac.compare_digest(candidate, self._password)
 
     def issue_session(self) -> str:
-        return self._serializer.dumps({"auth": True})
+        return self._session_serializer.dumps({"auth": True})
 
     def valid_session(self, token: str | None) -> bool:
         if not token:
             return False
         try:
-            data = self._serializer.loads(token, max_age=SESSION_MAX_AGE)
+            data = self._session_serializer.loads(token, max_age=SESSION_MAX_AGE)
         except (BadSignature, SignatureExpired):
             return False
         return isinstance(data, dict) and data.get("auth") is True
 
     def issue_csrf(self) -> str:
-        return self._serializer.dumps("csrf")
+        return self._csrf_serializer.dumps("csrf")
 
     def valid_csrf(self, token: str | None) -> bool:
         if not token:
             return False
         try:
-            value = self._serializer.loads(token, max_age=CSRF_MAX_AGE)
+            value = self._csrf_serializer.loads(token, max_age=CSRF_MAX_AGE)
         except (BadSignature, SignatureExpired):
             return False
         return value == "csrf"
