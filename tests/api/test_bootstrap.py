@@ -9,6 +9,7 @@ def test_production_app_wires_factories_and_token(monkeypatch):
         api_token = SecretStr("tok")
         web_password = None
         secret_key = None
+        schedule_minutes = 15
 
     monkeypatch.setattr(bs, "load_config", lambda: FakeCfg())
     monkeypatch.setattr(bs, "make_engine", lambda url: object())
@@ -28,6 +29,7 @@ def test_production_app_empty_token_when_unset(monkeypatch):
         api_token = None
         web_password = None
         secret_key = None
+        schedule_minutes = 15
 
     monkeypatch.setattr(bs, "load_config", lambda: FakeCfg())
     monkeypatch.setattr(bs, "make_engine", lambda url: object())
@@ -61,3 +63,15 @@ def test_production_app_warns_without_secret_key(monkeypatch, recwarn):
     app = b.production_app()
     assert app.state.web_security is not None
     assert any("SECRET_KEY" in str(w.message) for w in recwarn.list)
+
+
+def test_production_app_exposes_schedule_minutes(monkeypatch):
+    monkeypatch.setenv("MAILBENDER_DATABASE_URL", "postgresql+psycopg://u:p@h/db")
+    monkeypatch.setenv("MAILBENDER_IMAP_HOST", "h")
+    monkeypatch.setenv("MAILBENDER_IMAP_USER", "u")
+    monkeypatch.setenv("MAILBENDER_IMAP_PASSWORD", "p")
+    monkeypatch.setenv("MAILBENDER_SCHEDULE_MINUTES", "30")
+    import mailbender.api.bootstrap as b
+    monkeypatch.setattr(b, "make_engine", lambda url: object())
+    app = b.production_app()
+    assert app.state.schedule_minutes == 30

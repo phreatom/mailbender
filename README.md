@@ -42,6 +42,23 @@ IMAPClient · pluggable LLM provider (cloud default, configurable).
    - `GET/POST/DELETE /mappings` — manage category→folder mappings
    - `GET /categories` — list categories
 
+## Web UI
+
+Set a web password and a stable secret key (see `.env.example`):
+
+    MAILBENDER_WEB_PASSWORD=...        # required to enable web login
+    MAILBENDER_SECRET_KEY=...          # long random string; stabilizes sessions
+
+Then open `http://localhost:8000/login`. The UI has two modes:
+
+- **💬 Chat** — persistent, multi-turn questions about your mailbox, with sources.
+- **⚙ Operator** — priorities (grouped by HIGH/MED/LOW), runs & history, audit
+  log, category & folder-mapping management, and on-demand run triggers
+  (main/style/feedback). The overview auto-refreshes via HTMX polling.
+
+The web UI is served by the same process as the JSON API; the API's
+`Authorization: Bearer $MAILBENDER_API_TOKEN` auth is unaffected.
+
 ## Scheduling
 
 The `scheduler` service loops continuously, firing each run type on its own

@@ -72,6 +72,7 @@ def production_app():
     web_password = cfg.web_password.get_secret_value() if cfg.web_password else ""
     app.state.web_security = WebSecurity(secret_key=secret_key, password=web_password)
     mount_web(app)
+    app.state.schedule_minutes = cfg.schedule_minutes
 
     app.state.repo_factory = lambda: Repository(SessionLocal())
     app.state.chat_factory = lambda: _build_chat(cfg, SessionLocal())
