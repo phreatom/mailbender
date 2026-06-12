@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 _ORDER = ["high", "medium", "low"]
 
@@ -12,11 +12,11 @@ def group_by_priority(rows):
 
 
 def next_run_countdown(last_run_at, schedule_minutes: int, now=None) -> str:
-    if not schedule_minutes:
+    if schedule_minutes <= 0:
         return "manual"
     if last_run_at is None:
         return "—"
-    now = now or datetime.utcnow()
+    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     due = last_run_at + timedelta(minutes=schedule_minutes)
     if due <= now:
         return "due now"

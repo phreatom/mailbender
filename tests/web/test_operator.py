@@ -70,7 +70,7 @@ def test_overview_renders_status_and_groups():
     c = op_client()
     r = c.get("/app/operator")
     assert r.status_code == 200
-    assert "HIGH" in r.text.upper()
+    assert "HIGH" in r.text
     assert "Finance" in r.text
     assert "/app/operator/priorities" in r.text  # hx-poll target present
 

@@ -66,7 +66,7 @@ def register_operator_routes(app, templates, require_web_session):
             raise HTTPException(status_code=403)
         if run_type not in _VALID_RUN:
             raise HTTPException(status_code=422)
+        _audit(request, "run_triggered", run_type)
         runner = request.app.state.runner_factory()
         getattr(runner, f"run_{run_type}")()
-        _audit(request, "run_triggered", run_type)
         return Response(status_code=204)
