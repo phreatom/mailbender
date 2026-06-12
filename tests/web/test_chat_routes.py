@@ -77,7 +77,7 @@ def test_chat_page_requires_auth():
 
 def test_new_conversation_then_message_threads_history():
     c, repo, chat = make()
-    new = c.post("/app/chat/new", follow_redirects=False)
+    new = c.post("/app/chat/new", data={"csrf_token": _csrf(c)}, follow_redirects=False)
     assert new.status_code == 303
     cid = list(repo.convs)[0]
     repo.convs[cid].messages.append(FakeMsg("user", "earlier"))
@@ -93,7 +93,13 @@ def test_new_conversation_then_message_threads_history():
 
 def test_message_rejected_without_csrf():
     c, repo, chat = make()
-    c.post("/app/chat/new")
+    c.post("/app/chat/new", data={"csrf_token": _csrf(c)})
     cid = list(repo.convs)[0]
     r = c.post(f"/app/chat/{cid}/message", data={"question": "x"})
+    assert r.status_code == 403
+
+
+def test_new_conversation_rejected_without_csrf():
+    c, repo, chat = make()
+    r = c.post("/app/chat/new", follow_redirects=False)
     assert r.status_code == 403

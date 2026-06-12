@@ -45,7 +45,9 @@ def register_chat_routes(app, templates, require_web_session):
             "csrf_token": _csrf(request)})
 
     @app.post("/app/chat/new", dependencies=[Depends(require_web_session)])
-    def chat_new(request: Request):
+    def chat_new(request: Request, csrf_token: str = Form("")):
+        if not request.app.state.web_security.valid_csrf(csrf_token):
+            raise HTTPException(status_code=403)
         conv = request.app.state.repo_factory().create_conversation("New chat")
         return RedirectResponse(url=f"/app/chat/{conv.id}", status_code=303)
 
