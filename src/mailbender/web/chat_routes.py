@@ -1,9 +1,7 @@
 import json
-from fastapi import APIRouter, Request, Form, Depends, HTTPException
+from fastapi import Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from mailbender.audit.log import AuditLogger
-
-router = APIRouter()
 
 
 def _audit(request, actor, action, target="", result="success"):
