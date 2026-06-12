@@ -31,23 +31,37 @@ class Runner:
                 continue
             try:
                 category = self.classifier.classify(email, self.categories)
+                self.repo.record_run_step("main", email.uid, "classify",
+                                          "success", category)
                 priority = self.prioritizer.prioritize(email)
+                self.repo.record_run_step("main", email.uid, "prioritize",
+                                          "success", priority)
                 self.indexer.index(email)
+                self.repo.record_run_step("main", email.uid, "index", "success")
                 moved = self.mover.maybe_move(email.uid, category)
+                self.repo.record_run_step("main", email.uid, "move",
+                                          "success" if moved else "skipped")
                 drafted = False
                 if category == self.reply_category:
                     self.draft_generator.generate(email, self.style_examples)
                     self.audit.record("scheduler", "draft_append", email.uid)
+                    self.repo.record_run_step("main", email.uid, "draft", "success")
                     drafted = True
+                else:
+                    self.repo.record_run_step("main", email.uid, "draft", "skipped")
                 self.repo.mark_processed(
                     email.uid, category, priority, moved, drafted)
-            except Exception as exc:  # per-mail isolation
+            except Exception:  # per-mail isolation
                 self.audit.record("scheduler", "process_error",
                                   email.uid, result="error")
+                self.repo.record_run_step("main", email.uid, "process", "error")
                 continue
+        self.repo.record_run_step("main", None, "run", "success")
 
     def run_style(self):
         StyleLearner(self.imap, self.session).bootstrap()
+        self.repo.record_run_step("style", None, "run", "success")
 
     def run_feedback(self):
         FeedbackLearner(self.imap, self.session).run()
+        self.repo.record_run_step("feedback", None, "run", "success")
