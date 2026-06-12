@@ -45,6 +45,7 @@ class RunRow:
 
 
 class OpRepo:
+    session = object()
     def processed_by_priority(self):
         return [P("1", "high", "Finance"), P("2", "low", "Dev")]
     def last_run_at(self, run_type):
@@ -80,3 +81,46 @@ def test_priorities_partial_pollable():
     r = c.get("/app/operator/priorities")
     assert r.status_code == 200
     assert "Finance" in r.text
+
+
+def test_run_trigger_dispatches_and_audits(monkeypatch):
+    import re
+    import mailbender.web.operator_routes as opmod
+    recorded = []
+
+    class FakeAuditor:
+        def __init__(self, session): pass
+        def record(self, actor, action, target="", result="success"):
+            recorded.append((actor, action, target))
+    monkeypatch.setattr(opmod, "AuditLogger", FakeAuditor)
+
+    class FakeRunner:
+        def __init__(self): self.calls = []
+        def run_main(self): self.calls.append("main")
+        def run_style(self): self.calls.append("style")
+        def run_feedback(self): self.calls.append("feedback")
+    runner = FakeRunner()
+
+    app = FastAPI()
+    app.state.web_security = WebSecurity(secret_key="k" * 32, password="pw")
+    app.state.repo_factory = lambda: OpRepo()
+    app.state.runner_factory = lambda: runner
+    app.state.schedule_minutes = 15
+    mount_web(app)
+    c = TestClient(app)
+    c.post("/login", data={"password": "pw"})
+    token = re.search(r'name="csrf_token" value="([^"]+)"',
+                      c.get("/app/operator").text).group(1)
+
+    # success -> 204, dispatched, audited
+    r = c.post("/app/operator/run", data={"run_type": "style", "csrf_token": token})
+    assert r.status_code == 204
+    assert runner.calls == ["style"]
+    assert ("web", "run_triggered", "style") in recorded
+
+    # invalid run_type -> 422
+    assert c.post("/app/operator/run",
+                  data={"run_type": "nope", "csrf_token": token}).status_code == 422
+
+    # missing csrf -> 403
+    assert c.post("/app/operator/run", data={"run_type": "main"}).status_code == 403

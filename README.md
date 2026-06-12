@@ -59,6 +59,10 @@ Then open `http://localhost:8000/login`. The UI has two modes:
 The web UI is served by the same process as the JSON API; the API's
 `Authorization: Bearer $MAILBENDER_API_TOKEN` auth is unaffected.
 
+Behind a TLS-terminating reverse proxy, run uvicorn with `--proxy-headers` (and
+`--forwarded-allow-ips` set to your proxy's IP) so that the session cookie
+receives the `Secure` flag on HTTPS deployments.
+
 ## Scheduling
 
 The `scheduler` service loops continuously, firing each run type on its own
