@@ -33,6 +33,12 @@ def mount_web(app: FastAPI) -> None:
     app.mount("/static", StaticFiles(directory=str(_DIR / "static")), name="static")
     templates.env.filters["fromjson"] = lambda s: _json.loads(s) if s else []
 
+    @app.get("/")
+    def root():
+        # Send the root to the app; the session gate forwards unauthenticated
+        # visitors on to /login, while logged-in ones land on the dashboard.
+        return RedirectResponse(url="/app", status_code=303)
+
     @app.get("/login", response_class=HTMLResponse)
     def login_form(request: Request):
         sec = _security(request)
