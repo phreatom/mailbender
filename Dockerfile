@@ -7,4 +7,4 @@ COPY alembic.ini ./
 COPY docker-entrypoint.sh ./
 RUN pip install --no-cache-dir -e . && chmod +x docker-entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["uvicorn", "mailbender.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "mailbender.api.bootstrap:production_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
