@@ -141,3 +141,15 @@ def test_unconfigured_api_command_exits_nonzero(monkeypatch):
     result = runner.invoke(app, ["priorities"])
     assert result.exit_code != 0
     assert "login" in (result.stdout + result.stderr).lower()
+
+
+def test_mappings_remove_missing_exits_nonzero(monkeypatch):
+    monkeypatch.setattr(main, "resolve_config",
+                        lambda **kw: ClientConfig(url="http://api", token="tok"))
+
+    def handler(request):
+        return httpx.Response(200, json={"removed": False})
+
+    _patch_client(monkeypatch, handler)
+    result = runner.invoke(app, ["mappings", "remove", "Nope"])
+    assert result.exit_code != 0

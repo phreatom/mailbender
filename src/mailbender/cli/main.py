@@ -225,8 +225,11 @@ def mappings_remove(ctx: typer.Context, category: str):
     data = _api(ctx, lambda c: c.mappings_remove(category))
     if ctx.obj.json:
         render.emit_json(data)
-    else:
+    elif data.get("removed"):
         render.confirm(f"Removed mapping: {category}")
+    else:
+        render.error(f"No such mapping: {category}")
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

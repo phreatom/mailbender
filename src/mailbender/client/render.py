@@ -6,8 +6,10 @@ from rich.panel import Panel
 from rich.table import Table
 
 # JSON to stdout; human chatter/errors to stderr so pipes stay clean.
-_out = Console(width=200)
-_err = Console(stderr=True, width=200)
+# Width is auto-detected from the terminal (Rich falls back to $COLUMNS, then 80
+# when not a TTY) so tables stay responsive when piped or in narrow terminals.
+_out = Console()
+_err = Console(stderr=True)
 
 
 def emit_json(data) -> None:
