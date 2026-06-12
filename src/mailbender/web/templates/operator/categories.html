@@ -1,0 +1,17 @@
+{% extends "operator/base.html" %}
+{% block operator %}
+<table><thead><tr><th>name</th><th>description</th><th></th></tr></thead>
+<tbody>{% for c in categories %}<tr>
+  <td>{{ c.name }}</td><td>{{ c.description }}</td>
+  <td><form method="post" action="/app/operator/categories/remove">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="name" value="{{ c.name }}">
+    <button>remove</button></form></td>
+</tr>{% endfor %}</tbody></table>
+<form method="post" action="/app/operator/categories/add" style="margin-top:10px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input name="name" placeholder="name">
+  <input name="description" placeholder="description">
+  <button>add</button>
+</form>
+{% endblock %}

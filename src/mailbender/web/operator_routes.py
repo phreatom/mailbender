@@ -1,5 +1,5 @@
 from fastapi import Request, Form, Depends, HTTPException
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, Response, RedirectResponse
 from mailbender.audit.log import AuditLogger
 from mailbender.web.operator import group_by_priority, next_run_countdown
 
@@ -70,3 +70,73 @@ def register_operator_routes(app, templates, require_web_session):
         runner = request.app.state.runner_factory()
         getattr(runner, f"run_{run_type}")()
         return Response(status_code=204)
+
+    def _require_csrf(request, token):
+        if not request.app.state.web_security.valid_csrf(token):
+            raise HTTPException(status_code=403)
+
+    @app.get("/app/operator/runs", response_class=HTMLResponse,
+             dependencies=[Depends(require_web_session)])
+    def runs_view(request: Request):
+        repo = request.app.state.repo_factory()
+        return templates.TemplateResponse(request, "operator/runs.html",
+                                          {"nav": "runs", "rows": repo.recent_runs(50)})
+
+    @app.get("/app/operator/audit", response_class=HTMLResponse,
+             dependencies=[Depends(require_web_session)])
+    def audit_view(request: Request):
+        repo = request.app.state.repo_factory()
+        return templates.TemplateResponse(request, "operator/audit.html",
+                                          {"nav": "audit", "rows": repo.recent_audit(50)})
+
+    @app.get("/app/operator/categories", response_class=HTMLResponse,
+             dependencies=[Depends(require_web_session)])
+    def categories_view(request: Request):
+        repo = request.app.state.repo_factory()
+        return templates.TemplateResponse(request, "operator/categories.html", {
+            "nav": "categories", "categories": repo.list_categories(),
+            "csrf_token": _csrf(request)})
+
+    @app.post("/app/operator/categories/add",
+              dependencies=[Depends(require_web_session)])
+    def category_add(request: Request, name: str = Form(...),
+                     description: str = Form(""), csrf_token: str = Form("")):
+        _require_csrf(request, csrf_token)
+        request.app.state.repo_factory().add_category(name, description)
+        _audit(request, "category_add", name)
+        return RedirectResponse("/app/operator/categories", status_code=303)
+
+    @app.post("/app/operator/categories/remove",
+              dependencies=[Depends(require_web_session)])
+    def category_remove(request: Request, name: str = Form(...),
+                        csrf_token: str = Form("")):
+        _require_csrf(request, csrf_token)
+        request.app.state.repo_factory().remove_category(name)
+        _audit(request, "category_remove", name)
+        return RedirectResponse("/app/operator/categories", status_code=303)
+
+    @app.get("/app/operator/mappings", response_class=HTMLResponse,
+             dependencies=[Depends(require_web_session)])
+    def mappings_view(request: Request):
+        repo = request.app.state.repo_factory()
+        return templates.TemplateResponse(request, "operator/mappings.html", {
+            "nav": "mappings", "mappings": repo.list_mappings(),
+            "csrf_token": _csrf(request)})
+
+    @app.post("/app/operator/mappings/add",
+              dependencies=[Depends(require_web_session)])
+    def mapping_add(request: Request, category: str = Form(...),
+                    folder: str = Form(...), csrf_token: str = Form("")):
+        _require_csrf(request, csrf_token)
+        request.app.state.repo_factory().add_mapping(category, folder)
+        _audit(request, "mapping_add", category)
+        return RedirectResponse("/app/operator/mappings", status_code=303)
+
+    @app.post("/app/operator/mappings/remove",
+              dependencies=[Depends(require_web_session)])
+    def mapping_remove(request: Request, category: str = Form(...),
+                       csrf_token: str = Form("")):
+        _require_csrf(request, csrf_token)
+        request.app.state.repo_factory().remove_mapping(category)
+        _audit(request, "mapping_remove", category)
+        return RedirectResponse("/app/operator/mappings", status_code=303)

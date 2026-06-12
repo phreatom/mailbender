@@ -1,0 +1,9 @@
+{% extends "operator/base.html" %}
+{% block operator %}
+<table><thead><tr><th>when</th><th>type</th><th>uid</th><th>step</th><th>result</th><th>detail</th></tr></thead>
+<tbody>{% for r in rows %}<tr>
+  <td>{{ r.created_at.isoformat(timespec='minutes') if r.created_at else '' }}</td>
+  <td>{{ r.run_type }}</td><td>{{ r.uid or '' }}</td><td>{{ r.step }}</td>
+  <td>{{ r.result }}</td><td>{{ r.detail }}</td>
+</tr>{% endfor %}</tbody></table>
+{% endblock %}
