@@ -57,3 +57,12 @@ def add_mapping(repo, category: str, folder: str) -> dict:
 
 def remove_mapping(repo, category: str) -> dict:
     return {"removed": repo.remove_mapping(category)}
+
+
+def add_category(repo, name: str, description: str = "") -> dict:
+    repo.add_category(name, description)
+    return {"name": name, "description": description}
+
+
+def remove_category(repo, name: str) -> bool:
+    return repo.remove_category(name)
