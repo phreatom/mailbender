@@ -166,5 +166,29 @@ def priorities():
                    f"[{p.uid}] {p.category}")
 
 
+@app.command("add-mapping")
+def add_mapping(category: str, folder: str):
+    """Map a category to a target IMAP folder (upserts)."""
+    _make_repo().add_mapping(category, folder)
+    typer.echo(f"Mapped {category} -> {folder}")
+
+
+@app.command()
+def mappings():
+    """List category-to-folder mappings."""
+    for m in _make_repo().list_mappings():
+        typer.echo(f"{m.category_name} -> {m.target_folder}")
+
+
+@app.command("remove-mapping")
+def remove_mapping(category: str):
+    """Remove a category-to-folder mapping."""
+    if _make_repo().remove_mapping(category):
+        typer.echo(f"Removed mapping: {category}")
+    else:
+        typer.echo(f"No such mapping: {category}")
+        raise typer.Exit(code=1)
+
+
 if __name__ == "__main__":
     app()

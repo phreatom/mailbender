@@ -206,3 +206,30 @@ def test_priorities_command(monkeypatch):
     assert result.exit_code == 0
     assert "high" in result.stdout
     assert result.stdout.index("high") < result.stdout.index("low")
+
+
+def test_mapping_commands(monkeypatch):
+    from mailagent.cli import main
+
+    store = {}
+
+    class M:
+        def __init__(self, c, f):
+            self.category_name = c; self.target_folder = f
+
+    class FakeRepo:
+        def add_mapping(self, category, folder):
+            store[category] = folder
+
+        def list_mappings(self):
+            return [M(c, f) for c, f in store.items()]
+
+        def remove_mapping(self, category):
+            return store.pop(category, None) is not None
+
+    monkeypatch.setattr(main, "_make_repo", lambda: FakeRepo())
+    assert runner.invoke(app, ["add-mapping", "Newsletter", "Archive/News"]).exit_code == 0
+    out = runner.invoke(app, ["mappings"])
+    assert "Newsletter" in out.stdout and "Archive/News" in out.stdout
+    assert runner.invoke(app, ["remove-mapping", "Newsletter"]).exit_code == 0
+    assert runner.invoke(app, ["remove-mapping", "Newsletter"]).exit_code == 1
