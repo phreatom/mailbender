@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block shell %}
+<main class="login-wrap">
+  <form class="login-card" method="post" action="/login">
+    <div class="brand">mailbender</div>
+    {% if not login_enabled %}
+      <p class="err">Web login is not configured. Set MAILBENDER_WEB_PASSWORD.</p>
+    {% else %}
+      {% if error %}<p class="err">{{ error }}</p>{% endif %}
+      <input type="password" name="password" placeholder="password" autofocus>
+      <button type="submit">enter</button>
+    {% endif %}
+  </form>
+</main>
+{% endblock %}
