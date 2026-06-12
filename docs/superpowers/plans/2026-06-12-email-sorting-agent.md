@@ -10,6 +10,28 @@
 
 ---
 
+## Execution status — COMPLETE (2026-06-12)
+
+All 21 tasks implemented, committed (one commit per task), and verified: **43 tests
+pass as a full suite** and `docker compose build` succeeds. Three deviations from the
+plan text were required to make the test suite pass and are reflected in the code (not
+in the per-task snippets below):
+
+1. **Test isolation** — the repository commits inside its methods, so committed rows
+   leaked across tests and the *full* suite failed (it passed task-by-task). The
+   `tests/conftest.py` `db_session` fixture uses the SQLAlchemy external-transaction
+   pattern (`sessionmaker(bind=connection, join_transaction_mode="create_savepoint")`,
+   rolled back at teardown) instead of the plain `sessionmaker(bind=db_engine)` shown
+   in Task 3.
+2. **GreenMail bind address** — GreenMail defaults to binding `127.0.0.1` inside the
+   container, unreachable through Docker's port-forward. Added
+   `-Dgreenmail.hostname=0.0.0.0` to `GREENMAIL_OPTS` in `tests/docker-compose.test.yml`.
+3. **GreenMail login id** — the user spec `me:secret@example.com` creates login id `me`
+   (mailbox `me@example.com`), so the IMAP test in Task 7 logs in as `me`, not
+   `me@example.com`.
+
+---
+
 ## File Structure
 
 ```
@@ -78,7 +100,7 @@ Each module has one responsibility. `core` modules never import from `api`/`cli`
 - Create: `tests/__init__.py`
 - Create: `tests/test_smoke.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/test_smoke.py`:
 ```python
@@ -87,12 +109,12 @@ def test_package_imports():
     assert mailagent.__version__ == "0.1.0"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/test_smoke.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent'`
 
-- [ ] **Step 3: Create pyproject.toml and package**
+- [x] **Step 3: Create pyproject.toml and package**
 
 `pyproject.toml`:
 ```toml
@@ -138,12 +160,12 @@ __version__ = "0.1.0"
 
 `tests/__init__.py`: (empty file)
 
-- [ ] **Step 4: Install and run test to verify it passes**
+- [x] **Step 4: Install and run test to verify it passes**
 
 Run: `pip install -e ".[dev]" && pytest tests/test_smoke.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add pyproject.toml src/mailagent/__init__.py tests/__init__.py tests/test_smoke.py
@@ -158,7 +180,7 @@ git commit -m "chore: scaffold mailagent python package"
 - Create: `src/mailagent/config.py`
 - Test: `tests/test_config.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/test_config.py`:
 ```python
@@ -191,12 +213,12 @@ def test_defaults(monkeypatch):
     assert cfg.schedule_minutes == 15
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/test_config.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.config'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/config.py`:
 ```python
@@ -230,12 +252,12 @@ def load_config() -> Config:
     return cfg
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/test_config.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/config.py tests/test_config.py
@@ -253,7 +275,7 @@ git commit -m "feat: add configuration loading from env"
 - Test: `tests/store/test_db.py`
 - Create: `tests/store/__init__.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/store/test_db.py`:
 ```python
@@ -321,12 +343,12 @@ services:
 
 `tests/store/__init__.py`: (empty file)
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/store/test_db.py -v`
 Expected: FAIL — `db_session` works via conftest, but assert/import may fail because `mailagent.store.db` is unused here; this test only validates the fixture. If the fixture is missing pytest-docker plugin, install it. Expected first failure: connection/plugin error.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/store/__init__.py`: (empty file)
 
@@ -348,12 +370,12 @@ def session_scope(session_factory) -> Session:
     return session_factory()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/store/test_db.py -v`
 Expected: PASS (Postgres test container starts, `SELECT 1` returns 1)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/conftest.py tests/docker-compose.test.yml src/mailagent/store tests/store
@@ -371,7 +393,7 @@ git commit -m "test: add postgres+pgvector test fixture and db engine"
 - Create: `migrations/versions/0001_initial.py`
 - Test: `tests/store/test_models.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/store/test_models.py`:
 ```python
@@ -390,12 +412,12 @@ def test_create_all_tables(db_engine):
     } <= table_names
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/store/test_models.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.store.models'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/store/models.py`:
 ```python
@@ -540,12 +562,12 @@ def downgrade():
     Base.metadata.drop_all(op.get_bind())
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/store/test_models.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/store/models.py alembic.ini migrations
@@ -560,7 +582,7 @@ git commit -m "feat: add ORM models and initial migration"
 - Create: `src/mailagent/store/repository.py`
 - Test: `tests/store/test_repository.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/store/test_repository.py`:
 ```python
@@ -596,12 +618,12 @@ def test_add_and_list_categories(repo):
     assert "Rechnung" in names
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/store/test_repository.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.store.repository'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/store/repository.py`:
 ```python
@@ -643,12 +665,12 @@ class Repository:
         return self.session.execute(select(Category)).scalars().all()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/store/test_repository.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/store/repository.py tests/store/test_repository.py
@@ -666,7 +688,7 @@ git commit -m "feat: add repository with idempotent processed-mail tracking"
 - Test: `tests/llm/test_fake.py`
 - Create: `tests/llm/__init__.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/llm/__init__.py`: (empty file)
 
@@ -707,12 +729,12 @@ def test_fake_chat_returns_answer_with_sources():
     assert "Sarah" in answer
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/llm/test_fake.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.llm.fake'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/llm/__init__.py`: (empty file)
 
@@ -771,12 +793,12 @@ class FakeLLMProvider:
         return self._chat_answer
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/llm/test_fake.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/llm tests/llm
@@ -794,7 +816,7 @@ git commit -m "feat: add llm provider protocol and fake implementation"
 - Test: `tests/imap/test_client.py`
 - Create: `tests/imap/__init__.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add greenmail to `tests/docker-compose.test.yml`:
 ```yaml
@@ -850,12 +872,12 @@ def test_append_draft(imap):
     assert any(e.subject == "Draft subject" for e in emails)
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/imap/test_client.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.imap.client'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/imap/__init__.py`: (empty file)
 
@@ -940,12 +962,12 @@ class ImapClient:
             c.move([int(uid)], target_folder)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/imap/test_client.py -v`
 Expected: PASS (greenmail container handles SMTP send + IMAP fetch/append)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/imap tests/imap tests/docker-compose.test.yml
@@ -963,7 +985,7 @@ git commit -m "feat: add imap client with fetch/append/move"
 - Test: `tests/pipeline/test_classifier.py`
 - Create: `tests/pipeline/__init__.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/pipeline/__init__.py`: (empty file)
 
@@ -997,12 +1019,12 @@ def test_prioritizer_invalid_defaults_medium():
     assert pri.prioritize(EMAIL) == "medium"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/pipeline/test_classifier.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.pipeline.classifier'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/pipeline/__init__.py`: (empty file)
 
@@ -1038,12 +1060,12 @@ class Prioritizer:
         return result if result in VALID else "medium"
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/pipeline/test_classifier.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/pipeline/__init__.py src/mailagent/pipeline/classifier.py src/mailagent/pipeline/prioritizer.py tests/pipeline
@@ -1058,7 +1080,7 @@ git commit -m "feat: add classifier and prioritizer"
 - Create: `src/mailagent/pipeline/mover.py`
 - Test: `tests/pipeline/test_mover.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/pipeline/test_mover.py`:
 ```python
@@ -1089,12 +1111,12 @@ def test_no_mapping_means_no_move():
     assert imap.moved == []
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/pipeline/test_mover.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.pipeline.mover'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/pipeline/mover.py`:
 ```python
@@ -1111,12 +1133,12 @@ class Mover:
         return True
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/pipeline/test_mover.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/pipeline/mover.py tests/pipeline/test_mover.py
@@ -1131,7 +1153,7 @@ git commit -m "feat: add category-to-folder mover"
 - Create: `src/mailagent/pipeline/draft_generator.py`
 - Test: `tests/pipeline/test_draft_generator.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/pipeline/test_draft_generator.py`:
 ```python
@@ -1170,12 +1192,12 @@ def test_generate_appends_draft_and_stores_reference(session):
     assert refs[0].content == "Hallo, danke."
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/pipeline/test_draft_generator.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.pipeline.draft_generator'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/pipeline/draft_generator.py`:
 ```python
@@ -1204,12 +1226,12 @@ class DraftGenerator:
         return content
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/pipeline/test_draft_generator.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/pipeline/draft_generator.py tests/pipeline/test_draft_generator.py
@@ -1224,7 +1246,7 @@ git commit -m "feat: add draft generator with reference draft storage"
 - Create: `src/mailagent/pipeline/indexer.py`
 - Test: `tests/pipeline/test_indexer.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/pipeline/test_indexer.py`:
 ```python
@@ -1261,12 +1283,12 @@ def test_index_is_idempotent(session):
     assert len(rows) == 1
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/pipeline/test_indexer.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.pipeline.indexer'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/pipeline/indexer.py`:
 ```python
@@ -1291,12 +1313,12 @@ class Indexer:
         self.session.commit()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/pipeline/test_indexer.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/pipeline/indexer.py tests/pipeline/test_indexer.py
@@ -1313,7 +1335,7 @@ git commit -m "feat: add mail indexer with pgvector embeddings"
 - Test: `tests/audit/test_log.py`
 - Create: `tests/audit/__init__.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/audit/__init__.py`: (empty file)
 
@@ -1341,12 +1363,12 @@ def test_record_audit_entry(session):
     assert rows[0].result == "success"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/audit/test_log.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.audit.log'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/audit/__init__.py`: (empty file)
 
@@ -1367,12 +1389,12 @@ class AuditLogger:
         self.session.commit()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/audit/test_log.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/audit tests/audit
@@ -1389,7 +1411,7 @@ git commit -m "feat: add append-only audit logger"
 - Test: `tests/learning/test_style_learner.py`
 - Create: `tests/learning/__init__.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/learning/__init__.py`: (empty file)
 
@@ -1435,12 +1457,12 @@ def test_get_style_examples_returns_content(session):
     assert examples == ["Beispiel"]
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/learning/test_style_learner.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.learning.style_learner'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/learning/__init__.py`: (empty file)
 
@@ -1474,12 +1496,12 @@ class StyleLearner:
         return [r.content for r in self.session.execute(stmt).scalars().all()]
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/learning/test_style_learner.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/learning/__init__.py src/mailagent/learning/style_learner.py tests/learning
@@ -1494,7 +1516,7 @@ git commit -m "feat: add style learner bootstrap from sent folder"
 - Create: `src/mailagent/learning/feedback_learner.py`
 - Test: `tests/learning/test_feedback_learner.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/learning/test_feedback_learner.py`:
 ```python
@@ -1545,12 +1567,12 @@ def test_no_match_is_skipped(session):
     assert learner.run() == 0
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/learning/test_feedback_learner.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.learning.feedback_learner'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/learning/feedback_learner.py`:
 ```python
@@ -1589,12 +1611,12 @@ class FeedbackLearner:
         return self.session.execute(stmt).scalar_one_or_none()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/learning/test_feedback_learner.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/learning/feedback_learner.py tests/learning/test_feedback_learner.py
@@ -1611,7 +1633,7 @@ git commit -m "feat: add feedback learner with draft-sent diff weighting"
 - Test: `tests/chat/test_chat.py`
 - Create: `tests/chat/__init__.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/chat/__init__.py`: (empty file)
 
@@ -1651,12 +1673,12 @@ def test_chat_empty_index_returns_no_info(session):
     assert answer.sources == []
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/chat/test_chat.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.chat.chat'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/chat/__init__.py`: (empty file)
 
@@ -1701,12 +1723,12 @@ class Chat:
         return ChatAnswer(text=text, sources=sources)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/chat/test_chat.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/chat tests/chat
@@ -1723,7 +1745,7 @@ git commit -m "feat: add mailbox chat with pgvector retrieval"
 - Test: `tests/scheduler/test_runner.py`
 - Create: `tests/scheduler/__init__.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/scheduler/__init__.py`: (empty file)
 
@@ -1791,12 +1813,12 @@ def test_main_run_skips_already_processed(session):
     assert imap.drafts == []
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/scheduler/test_runner.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.scheduler.runner'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/scheduler/__init__.py`: (empty file)
 
@@ -1849,12 +1871,12 @@ class Runner:
                 continue
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/scheduler/test_runner.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/scheduler tests/scheduler
@@ -1871,7 +1893,7 @@ git commit -m "feat: add scheduler main run wiring pipeline together"
 - Test: `tests/cli/test_main.py`
 - Create: `tests/cli/__init__.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/cli/__init__.py`: (empty file)
 
@@ -1904,12 +1926,12 @@ def test_categories_list_command(monkeypatch):
     assert "Newsletter" in result.stdout
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/cli/test_main.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.cli.main'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/cli/__init__.py`: (empty file)
 
@@ -1956,12 +1978,12 @@ if __name__ == "__main__":
     app()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/cli/test_main.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/cli tests/cli
@@ -1979,7 +2001,7 @@ git commit -m "feat: add typer cli with version and categories commands"
 - Test: `tests/api/test_app.py`
 - Create: `tests/api/__init__.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/api/__init__.py`: (empty file)
 
@@ -2019,12 +2041,12 @@ def test_categories_with_valid_token():
     assert resp.json() == ["Newsletter"]
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/api/test_app.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.api.app'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/api/__init__.py`: (empty file)
 
@@ -2061,12 +2083,12 @@ def list_categories(repo) -> list[str]:
     return [c.name for c in repo.list_categories()]
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/api/test_app.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/api tests/api
@@ -2081,7 +2103,7 @@ git commit -m "feat: add fastapi web api with token auth"
 - Create: `src/mailagent/llm/openai_provider.py`
 - Test: `tests/llm/test_openai_provider.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/llm/test_openai_provider.py`:
 ```python
@@ -2131,12 +2153,12 @@ def test_embed_returns_vector():
     assert provider.embed("text") == [0.5] * 1536
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/llm/test_openai_provider.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'mailagent.llm.openai_provider'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/llm/openai_provider.py`:
 ```python
@@ -2198,12 +2220,12 @@ class OpenAIProvider:
             context="\n\n".join(context), question=question))
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/llm/test_openai_provider.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/llm/openai_provider.py tests/llm/test_openai_provider.py
@@ -2220,7 +2242,7 @@ git commit -m "feat: add openai llm provider implementation"
 - Test: `tests/llm/test_factory.py`
 - Test: `tests/scheduler/test_runner_extra.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/llm/test_factory.py`:
 ```python
@@ -2278,12 +2300,12 @@ def test_run_style_bootstraps(session):
     assert len(rows) == 1
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pytest tests/llm/test_factory.py tests/scheduler/test_runner_extra.py -v`
 Expected: FAIL — `mailagent.llm.factory` missing; `Runner.run_style` missing.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `src/mailagent/llm/factory.py`:
 ```python
@@ -2315,12 +2337,12 @@ from mailagent.learning.feedback_learner import FeedbackLearner
         FeedbackLearner(self.imap, self.session).run()
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `pytest tests/llm/test_factory.py tests/scheduler/test_runner_extra.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mailagent/llm/factory.py src/mailagent/scheduler/runner.py tests/llm/test_factory.py tests/scheduler/test_runner_extra.py pyproject.toml
@@ -2337,7 +2359,7 @@ git commit -m "feat: add provider factory and style/feedback runs"
 - Create: `.env.example`
 - Create: `README.md`
 
-- [ ] **Step 1: Write the Dockerfile**
+- [x] **Step 1: Write the Dockerfile**
 
 `Dockerfile`:
 ```dockerfile
@@ -2351,7 +2373,7 @@ RUN pip install --no-cache-dir -e .
 CMD ["uvicorn", "mailagent.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-- [ ] **Step 2: Write docker-compose.yml**
+- [x] **Step 2: Write docker-compose.yml**
 
 `docker-compose.yml`:
 ```yaml
@@ -2390,17 +2412,17 @@ MAILAGENT_API_TOKEN=change-this-token
 
 `README.md`: brief usage — `docker compose up`, run `alembic upgrade head`, CLI via `docker compose exec app mailagent --help`.
 
-- [ ] **Step 3: Run the full test suite**
+- [x] **Step 3: Run the full test suite**
 
 Run: `pytest -v`
 Expected: PASS — all tests across store, llm, imap, pipeline, learning, chat, scheduler, cli, api green. Test containers (postgres+pgvector, greenmail) start via pytest-docker.
 
-- [ ] **Step 4: Verify the image builds**
+- [x] **Step 4: Verify the image builds**
 
 Run: `docker compose build`
 Expected: Build succeeds with no errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Dockerfile docker-compose.yml .env.example README.md
