@@ -42,3 +42,33 @@ def test_classify_uses_chat_completion():
 def test_embed_returns_vector():
     provider = OpenAIProvider(client=FakeClient(vec=[0.5] * 1536))
     assert provider.embed("text") == [0.5] * 1536
+
+
+def test_chat_retries_transient_failure(monkeypatch):
+    import mailagent.llm.openai_provider as mod
+    from mailagent.llm.provider import Email
+
+    monkeypatch.setattr(mod.time, "sleep", lambda s: None)
+    state = {"n": 0}
+
+    class FlakyClient:
+        def __init__(self):
+            outer = self
+
+            class Chat:
+                class completions:
+                    @staticmethod
+                    def create(**kwargs):
+                        state["n"] += 1
+                        if state["n"] < 2:
+                            raise RuntimeError("transient")
+                        return type("R", (), {"choices": [
+                            type("C", (), {"message": type("M", (), {"content": "Newsletter"})})
+                        ]})
+
+            self.chat = Chat()
+
+    provider = mod.OpenAIProvider(client=FlakyClient())
+    email = Email(uid="1", subject="s", sender="a@b.c", body="b")
+    assert provider.classify(email, ["Newsletter"]) == "Newsletter"
+    assert state["n"] == 2

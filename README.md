@@ -21,27 +21,49 @@ IMAPClient · pluggable LLM provider (cloud default, configurable).
    # set IMAP credentials, LLM provider/key, and MAILAGENT_API_TOKEN
    ```
 
-2. Start the stack (app + Postgres with pgvector):
+2. Start the stack (app + scheduler + Postgres with pgvector):
 
    ```bash
    docker compose up -d
    ```
 
-3. Apply database migrations:
+   This starts three services: `postgres`, the `app` (web API), and a
+   `scheduler` that runs the periodic main/feedback/style passes. Database
+   migrations (`alembic upgrade head`) run automatically on container start.
 
-   ```bash
-   docker compose exec app alembic upgrade head
-   ```
+3. The web API is now on http://localhost:8000 (`GET /health` is public; all
+   other endpoints require `Authorization: Bearer $MAILAGENT_API_TOKEN`):
 
-4. The web API is now on http://localhost:8000 (`GET /health` is public; other
-   endpoints require `Authorization: Bearer $MAILAGENT_API_TOKEN`).
+   - `POST /chat` `{"question": "..."}` — ask about the mailbox
+   - `POST /run` — trigger a main run now
+   - `GET /priorities` — processed mail sorted by priority
+   - `GET /history` / `GET /audit` — recent run history / audit log
+   - `GET/POST/DELETE /mappings` — manage category→folder mappings
+   - `GET /categories` — list categories
+
+## Scheduling
+
+The `scheduler` service loops continuously, firing each run type on its own
+cadence (minutes): `MAILAGENT_SCHEDULE_MINUTES` (main), `MAILAGENT_FEEDBACK_MINUTES`,
+`MAILAGENT_STYLE_MINUTES`. A value of `0` disables automatic runs for that type
+(style learning defaults to `0` = manual/CLI only).
 
 ## CLI
 
 ```bash
 docker compose exec app mailagent --help
-docker compose exec app mailagent version
-docker compose exec app mailagent categories
+docker compose exec app mailagent scheduler          # run the loop in foreground
+docker compose exec app mailagent run                # one main pass now
+docker compose exec app mailagent run-style          # bootstrap style from Sent
+docker compose exec app mailagent run-feedback       # draft-vs-sent feedback pass
+docker compose exec app mailagent chat "What did Sarah say about the budget?"
+docker compose exec app mailagent priorities         # mail by priority (high first)
+docker compose exec app mailagent history            # recent run history
+docker compose exec app mailagent audit              # recent audit-log entries
+docker compose exec app mailagent categories         # list categories
+docker compose exec app mailagent add-mapping Newsletter Archive/News
+docker compose exec app mailagent mappings
+docker compose exec app mailagent remove-mapping Newsletter
 ```
 
 ## Configuration

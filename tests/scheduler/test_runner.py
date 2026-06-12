@@ -58,3 +58,24 @@ def test_main_run_skips_already_processed(session):
     )
     runner.run_main()
     assert imap.drafts == []
+
+
+def test_main_run_records_history_steps(session):
+    from sqlalchemy import select
+    from mailagent.store.models import RunHistory
+    inbox = [Email(uid="1", subject="Frage", sender="a@b.c", body="?",
+                   message_id="<m1>")]
+    imap = FakeImap(inbox)
+    provider = FakeLLMProvider(category="Antwort nötig", priority="high",
+                               draft="Hallo!")
+    runner = Runner(
+        imap=imap, provider=provider, session=session,
+        categories=["Antwort nötig"], mapping={},
+        reply_category="Antwort nötig", style_examples=["Grüße"],
+    )
+    runner.run_main()
+    rows = session.execute(select(RunHistory)).scalars().all()
+    steps = {r.step for r in rows}
+    assert {"classify", "prioritize", "index", "move", "draft", "run"} <= steps
+    marker = [r for r in rows if r.step == "run"]
+    assert len(marker) == 1 and marker[0].run_type == "main"

@@ -35,3 +35,25 @@ def test_append_draft(imap):
     imap.append_draft("Draft subject", "Draft body", folder="INBOX")
     emails = imap.fetch_folder("INBOX")
     assert any(e.subject == "Draft subject" for e in emails)
+
+
+def test_connect_retries_transient_failure(monkeypatch):
+    import mailagent.imap.client as mod
+
+    monkeypatch.setattr(mod.time, "sleep", lambda s: None)
+    state = {"n": 0}
+
+    class FakeIMAP:
+        def __init__(self, host, port=0, ssl=False):
+            state["n"] += 1
+            if state["n"] < 2:
+                raise OSError("connection refused")
+
+        def login(self, user, password):
+            return "ok"
+
+    monkeypatch.setattr(mod, "IMAPClient", FakeIMAP)
+    client = mod.ImapClient(host="h", port=1, user="u", password="p", use_ssl=False)
+    conn = client._connect()
+    assert isinstance(conn, FakeIMAP)
+    assert state["n"] == 2
