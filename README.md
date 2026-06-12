@@ -51,12 +51,34 @@ cadence (minutes): `MAILBENDER_SCHEDULE_MINUTES` (main), `MAILBENDER_FEEDBACK_MI
 
 ## CLI (thin client)
 
-Install on your machine — no server stack required:
+Install on your machine — no server stack required. The thin client is published
+as a wheel on each [GitHub Release](https://github.com/phreatom/mailbender/releases).
+Install the latest release's wheel directly by URL (replace `v0.1.0` with the
+release you want):
 
 ```bash
-uv tool install mailbender      # or: pipx install mailbender
+# uv (recommended):
+uv tool install https://github.com/phreatom/mailbender/releases/download/v0.1.0/mailbender-0.1.0-py3-none-any.whl
+
+# or pipx:
+pipx install https://github.com/phreatom/mailbender/releases/download/v0.1.0/mailbender-0.1.0-py3-none-any.whl
+
+# or pip into the current environment:
+pip install https://github.com/phreatom/mailbender/releases/download/v0.1.0/mailbender-0.1.0-py3-none-any.whl
+```
+
+Or download `mailbender-<version>-py3-none-any.whl` (or the `.tar.gz` sdist) from
+the [Releases page](https://github.com/phreatom/mailbender/releases) and install
+the local file, e.g. `uv tool install ./mailbender-0.1.0-py3-none-any.whl`.
+
+Then log in to your server's API:
+
+```bash
 mailbender login                # prompts for API URL + token; writes ~/.config/mailbender/config.toml (chmod 600)
 ```
+
+> Once the package is published to PyPI, `uv tool install mailbender` /
+> `pipx install mailbender` will work without the release URL.
 
 URL/token resolution order is **flag > env (`MAILBENDER_API_URL` / `MAILBENDER_API_TOKEN`) > config file**.
 
