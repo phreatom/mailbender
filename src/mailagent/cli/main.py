@@ -156,5 +156,15 @@ def audit(limit: int = 50):
         typer.echo(f"{r.actor:10} {r.action:16} {r.target:12} {r.result}")
 
 
+@app.command()
+def priorities():
+    """List processed mail sorted by priority (high first)."""
+    repo = _make_repo()
+    marks = {"high": "!!!", "medium": "!", "low": " "}
+    for p in repo.processed_by_priority():
+        typer.echo(f"{marks.get(p.priority, ' '):3} {p.priority:7} "
+                   f"[{p.uid}] {p.category}")
+
+
 if __name__ == "__main__":
     app()

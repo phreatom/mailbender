@@ -187,3 +187,22 @@ def test_audit_command(monkeypatch):
     result = runner.invoke(app, ["audit"])
     assert result.exit_code == 0
     assert "draft_append" in result.stdout
+
+
+def test_priorities_command(monkeypatch):
+    from mailagent.cli import main
+
+    class Row:
+        def __init__(self, uid, priority, category):
+            self.uid = uid; self.priority = priority; self.category = category
+
+    class FakeRepo:
+        def processed_by_priority(self):
+            return [Row("1", "high", "Antwort nötig"),
+                    Row("2", "low", "Newsletter")]
+
+    monkeypatch.setattr(main, "_make_repo", lambda: FakeRepo())
+    result = runner.invoke(app, ["priorities"])
+    assert result.exit_code == 0
+    assert "high" in result.stdout
+    assert result.stdout.index("high") < result.stdout.index("low")
