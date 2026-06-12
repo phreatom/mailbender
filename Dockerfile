@@ -4,5 +4,7 @@ COPY pyproject.toml ./
 COPY src ./src
 COPY migrations ./migrations
 COPY alembic.ini ./
-RUN pip install --no-cache-dir -e .
+COPY docker-entrypoint.sh ./
+RUN pip install --no-cache-dir -e . && chmod +x docker-entrypoint.sh
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["uvicorn", "mailagent.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
