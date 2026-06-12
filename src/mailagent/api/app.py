@@ -30,4 +30,16 @@ def create_app(api_token: str) -> FastAPI:
     def run():
         return routes.run_main(app.state.runner_factory())
 
+    @app.get("/priorities", dependencies=[Depends(require_auth)])
+    def priorities():
+        return routes.priorities(app.state.repo_factory())
+
+    @app.get("/history", dependencies=[Depends(require_auth)])
+    def history(limit: int = 50):
+        return routes.recent_history(app.state.repo_factory(), limit)
+
+    @app.get("/audit", dependencies=[Depends(require_auth)])
+    def audit(limit: int = 50):
+        return routes.recent_audit(app.state.repo_factory(), limit)
+
     return app

@@ -71,3 +71,48 @@ def test_run_endpoint(monkeypatch):
     assert resp.status_code == 200
     assert resp.json() == {"status": "ok"}
     assert fake.called is True
+
+
+def test_priorities_endpoint():
+    app = create_app(api_token="t")
+
+    class P:
+        uid = "1"; priority = "high"; category = "X"
+
+    class FakeRepo:
+        def processed_by_priority(self):
+            return [P()]
+
+    app.state.repo_factory = lambda: FakeRepo()
+    client = TestClient(app)
+    resp = client.get("/priorities", headers={"Authorization": "Bearer t"})
+    assert resp.status_code == 200
+    assert resp.json() == [{"uid": "1", "priority": "high", "category": "X"}]
+
+
+def test_history_and_audit_endpoints():
+    app = create_app(api_token="t")
+
+    class RunRow:
+        run_type = "main"; uid = "1"; step = "classify"
+        result = "success"; detail = "X"
+
+    class AuditRow:
+        actor = "scheduler"; action = "draft_append"
+        target = "1"; result = "success"
+
+    class FakeRepo:
+        def recent_runs(self, limit):
+            return [RunRow()]
+
+        def recent_audit(self, limit):
+            return [AuditRow()]
+
+    app.state.repo_factory = lambda: FakeRepo()
+    client = TestClient(app)
+    h = client.get("/history?limit=5", headers={"Authorization": "Bearer t"})
+    assert h.status_code == 200
+    assert h.json()[0]["step"] == "classify"
+    a = client.get("/audit", headers={"Authorization": "Bearer t"})
+    assert a.status_code == 200
+    assert a.json()[0]["action"] == "draft_append"
