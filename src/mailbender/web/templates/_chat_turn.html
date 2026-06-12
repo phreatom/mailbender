@@ -1,0 +1,8 @@
+<div class="bubble {{ 'user' if m.role == 'user' else 'assistant' }}">
+  {{ m.text }}
+  {% if m.role == 'assistant' and m.sources_json and m.sources_json != '[]' %}
+    <div>{% for s in m.sources_json | fromjson %}
+      <span class="chip" title="{{ s.uid }}">▸ {{ s.subject }}</span>
+    {% endfor %}</div>
+  {% endif %}
+</div>

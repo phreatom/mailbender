@@ -1,3 +1,4 @@
+import json as _json
 from pathlib import Path
 from fastapi import FastAPI, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -30,6 +31,7 @@ def mount_web(app: FastAPI) -> None:
         return RedirectResponse(url="/login", status_code=303)
 
     app.mount("/static", StaticFiles(directory=str(_DIR / "static")), name="static")
+    templates.env.filters["fromjson"] = lambda s: _json.loads(s) if s else []
 
     @app.get("/login", response_class=HTMLResponse)
     def login_form(request: Request):
@@ -60,7 +62,5 @@ def mount_web(app: FastAPI) -> None:
         resp.delete_cookie(SESSION_COOKIE, path="/", httponly=True, samesite="lax")
         return resp
 
-    @app.get("/app", response_class=HTMLResponse,
-             dependencies=[Depends(require_web_session)])
-    def app_home(request: Request):
-        return templates.TemplateResponse(request, "app_placeholder.html", {})
+    from mailbender.web.chat_routes import register_chat_routes
+    register_chat_routes(app, templates, require_web_session)
