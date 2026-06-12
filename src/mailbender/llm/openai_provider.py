@@ -59,7 +59,8 @@ class OpenAIProvider:
             return list(resp.data[0].embedding)
         return retry(call, sleep=time.sleep)
 
-    def chat(self, question: str, context: list[str], history=None) -> str:
+    def chat(self, question: str, context: list[str],
+             history: list[tuple[str, str]] | None = None) -> str:
         convo = ""
         if history:
             convo = "\n".join(f"{role}: {text}" for role, text in history) + "\n\n"

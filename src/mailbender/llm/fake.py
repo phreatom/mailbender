@@ -21,7 +21,8 @@ class FakeLLMProvider:
     def embed(self, text: str) -> list[float]:
         return [0.0] * 1536
 
-    def chat(self, question: str, context: list[str], history=None) -> str:
+    def chat(self, question: str, context: list[str],
+             history: list[tuple[str, str]] | None = None) -> str:
         if not context:
             return "Keine passende Information gefunden."
         return self._chat_answer
