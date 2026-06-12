@@ -55,7 +55,14 @@ def register_operator_routes(app, templates, require_web_session):
 
     @app.get("/app/operator/priorities", response_class=HTMLResponse,
              dependencies=[Depends(require_web_session)])
-    def priorities_partial(request: Request):
+    def priorities_view(request: Request):
+        ctx = {"nav": "priorities"}
+        ctx.update(_priorities_ctx(request))
+        return templates.TemplateResponse(request, "operator/priorities.html", ctx)
+
+    @app.get("/app/operator/priorities/fragment", response_class=HTMLResponse,
+             dependencies=[Depends(require_web_session)])
+    def priorities_fragment(request: Request):
         return templates.TemplateResponse(
             request, "operator/_priorities.html", _priorities_ctx(request))
 

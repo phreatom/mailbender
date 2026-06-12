@@ -1,4 +1,4 @@
-<div id="priorities" hx-get="/app/operator/priorities"
+<div id="priorities" hx-get="/app/operator/priorities/fragment"
      hx-trigger="every 5s" hx-swap="outerHTML">
   {% for g in groups %}
     <div class="prio-{{ g.priority }}" style="font-weight:700">

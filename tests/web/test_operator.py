@@ -73,14 +73,27 @@ def test_overview_renders_status_and_groups():
     assert r.status_code == 200
     assert "HIGH" in r.text
     assert "Finance" in r.text
-    assert "/app/operator/priorities" in r.text  # hx-poll target present
+    assert "/app/operator/priorities/fragment" in r.text  # hx-poll target present
 
 
-def test_priorities_partial_pollable():
+def test_priorities_page_is_full_layout():
     c = op_client()
     r = c.get("/app/operator/priorities")
     assert r.status_code == 200
     assert "Finance" in r.text
+    # full page, not a bare fragment: it carries the shell (stylesheet + nav)
+    assert "/static/app.css" in r.text
+    assert "audit log" in r.text  # sidebar nav present
+
+
+def test_priorities_fragment_is_bare():
+    c = op_client()
+    r = c.get("/app/operator/priorities/fragment")
+    assert r.status_code == 200
+    assert "Finance" in r.text
+    # bare HTMX fragment: no full-page shell
+    assert "/static/app.css" not in r.text
+    assert 'id="priorities"' in r.text
 
 
 def test_run_trigger_dispatches_and_audits(monkeypatch):
