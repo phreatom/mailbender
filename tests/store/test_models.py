@@ -10,6 +10,7 @@ def test_create_all_tables(db_engine):
     assert {
         "processed_mail", "category", "folder_mapping", "style_example",
         "reference_draft", "run_history", "audit_log", "mail_index",
+        "conversation", "chat_message",
     } <= table_names
 
 
