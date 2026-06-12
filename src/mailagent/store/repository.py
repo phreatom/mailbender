@@ -80,3 +80,26 @@ class Repository:
         )
         stmt = select(ProcessedMail).order_by(order, ProcessedMail.uid)
         return self.session.execute(stmt).scalars().all()
+
+    def add_mapping(self, category_name: str, target_folder: str):
+        stmt = insert(FolderMapping).values(
+            category_name=category_name, target_folder=target_folder
+        ).on_conflict_do_update(
+            index_elements=["category_name"],
+            set_={"target_folder": target_folder},
+        )
+        self.session.execute(stmt)
+        self.session.commit()
+
+    def list_mappings(self):
+        return self.session.execute(select(FolderMapping)).scalars().all()
+
+    def remove_mapping(self, category_name: str) -> bool:
+        stmt = select(FolderMapping).where(
+            FolderMapping.category_name == category_name)
+        obj = self.session.execute(stmt).scalar_one_or_none()
+        if obj is None:
+            return False
+        self.session.delete(obj)
+        self.session.commit()
+        return True

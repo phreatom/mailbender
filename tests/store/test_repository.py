@@ -71,3 +71,19 @@ def test_processed_by_priority_orders_high_first(repo):
     repo.mark_processed("c", "X", "medium", False, False)
     order = [p.priority for p in repo.processed_by_priority()]
     assert order == ["high", "medium", "low"]
+
+
+def test_add_list_remove_mapping(repo):
+    repo.add_mapping("Newsletter", "Archive/News")
+    mappings = {m.category_name: m.target_folder for m in repo.list_mappings()}
+    assert mappings == {"Newsletter": "Archive/News"}
+    assert repo.remove_mapping("Newsletter") is True
+    assert repo.list_mappings() == []
+    assert repo.remove_mapping("Newsletter") is False
+
+
+def test_add_mapping_upserts_target(repo):
+    repo.add_mapping("Newsletter", "Archive/News")
+    repo.add_mapping("Newsletter", "Archive/Old")
+    mappings = {m.category_name: m.target_folder for m in repo.list_mappings()}
+    assert mappings == {"Newsletter": "Archive/Old"}
