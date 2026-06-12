@@ -1,5 +1,5 @@
 from pathlib import Path
-from fastapi import FastAPI, Request, Form, Depends, HTTPException
+from fastapi import FastAPI, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -7,6 +7,10 @@ from mailbender.web.security import SESSION_COOKIE, SESSION_MAX_AGE
 
 _DIR = Path(__file__).parent
 templates = Jinja2Templates(directory=str(_DIR / "templates"))
+
+
+class NotAuthenticated(Exception):
+    pass
 
 
 def _security(request: Request):
@@ -17,10 +21,14 @@ def require_web_session(request: Request):
     sec = _security(request)
     token = request.cookies.get(SESSION_COOKIE)
     if not sec.valid_session(token):
-        raise HTTPException(status_code=303, headers={"Location": "/login"})
+        raise NotAuthenticated()
 
 
 def mount_web(app: FastAPI) -> None:
+    @app.exception_handler(NotAuthenticated)
+    async def _redirect_to_login(request, exc):
+        return RedirectResponse(url="/login", status_code=303)
+
     app.mount("/static", StaticFiles(directory=str(_DIR / "static")), name="static")
 
     @app.get("/login", response_class=HTMLResponse)
@@ -49,7 +57,7 @@ def mount_web(app: FastAPI) -> None:
     @app.get("/logout")
     def logout():
         resp = RedirectResponse(url="/login", status_code=303)
-        resp.delete_cookie(SESSION_COOKIE, path="/")
+        resp.delete_cookie(SESSION_COOKIE, path="/", httponly=True, samesite="lax")
         return resp
 
     @app.get("/app", response_class=HTMLResponse,
