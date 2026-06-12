@@ -30,3 +30,57 @@ def test_chat_empty_index_returns_no_info(session):
     answer = chat.ask("anything?")
     assert "Keine passende Information" in answer.text
     assert answer.sources == []
+
+
+def test_ask_threads_history_into_provider():
+    from mailbender.chat.chat import Chat
+
+    class RecordingProvider:
+        def __init__(self):
+            self.history_seen = None
+
+        def embed(self, text):
+            return [0.0] * 1536
+
+        def chat(self, question, context, history=None):
+            self.history_seen = history
+            return "answer"
+
+    class FakeSession:
+        def execute(self, stmt):
+            class R:
+                def scalars(self):
+                    class S:
+                        def all(self_inner):
+                            class Row:
+                                uid = "1"; subject = "s"; sender = "a"; body = "b"
+                            return [Row()]
+                    return S()
+            return R()
+
+    prov = RecordingProvider()
+    chat = Chat(prov, FakeSession())
+    ans = chat.ask("follow up", history=[("user", "q1"), ("assistant", "a1")])
+    assert ans.text == "answer"
+    assert prov.history_seen == [("user", "q1"), ("assistant", "a1")]
+
+
+def test_ask_without_history_is_backward_compatible():
+    from mailbender.chat.chat import Chat
+
+    class Prov:
+        def embed(self, text): return [0.0] * 1536
+        def chat(self, question, context, history=None): return "ok"
+
+    class FakeSession:
+        def execute(self, stmt):
+            class R:
+                def scalars(self):
+                    class S:
+                        def all(self): return []
+                    return S()
+            return R()
+
+    chat = Chat(Prov(), FakeSession())
+    ans = chat.ask("q")          # no history arg
+    assert ans.sources == []

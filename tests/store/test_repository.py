@@ -87,3 +87,25 @@ def test_add_mapping_upserts_target(repo):
     repo.add_mapping("Newsletter", "Archive/Old")
     mappings = {m.category_name: m.target_folder for m in repo.list_mappings()}
     assert mappings == {"Newsletter": "Archive/Old"}
+
+
+def test_conversation_crud(db_session):
+    from mailbender.store.repository import Repository
+    repo = Repository(db_session)
+    conv = repo.create_conversation("First")
+    assert conv.id is not None
+    repo.append_message(conv.id, "user", "hello", sources=[])
+    repo.append_message(conv.id, "assistant", "hi there",
+                        sources=[{"uid": "7", "subject": "Re: x"}])
+    loaded = repo.get_conversation(conv.id)
+    assert loaded.title == "First"
+    assert [(m.role, m.text) for m in loaded.messages] == [
+        ("user", "hello"), ("assistant", "hi there")]
+    assert loaded.messages[1].sources_json == '[{"uid": "7", "subject": "Re: x"}]'
+    assert [c.id for c in repo.list_conversations()] == [conv.id]
+
+
+def test_get_missing_conversation_returns_none(db_session):
+    from mailbender.store.repository import Repository
+    repo = Repository(db_session)
+    assert repo.get_conversation(999) is None

@@ -18,6 +18,8 @@ class Config(BaseSettings):
     llm_provider: str = "openai"
     llm_api_key: SecretStr | None = None
     api_token: SecretStr | None = None
+    web_password: SecretStr | None = None
+    secret_key: SecretStr | None = None
     schedule_minutes: int = 15
     feedback_minutes: int = 60
     style_minutes: int = 0

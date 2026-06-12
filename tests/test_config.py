@@ -71,3 +71,29 @@ def test_api_token_defaults_none(monkeypatch):
     from mailbender.config import load_config
     cfg = load_config()
     assert cfg.api_token is None
+
+
+def test_web_fields_load_from_env(monkeypatch):
+    monkeypatch.setenv("MAILBENDER_DATABASE_URL", "postgresql+psycopg://u:p@h/db")
+    monkeypatch.setenv("MAILBENDER_WEB_PASSWORD", "hunter2")
+    monkeypatch.setenv("MAILBENDER_SECRET_KEY", "s3cret-key")
+    monkeypatch.setenv("MAILBENDER_IMAP_HOST", "h")
+    monkeypatch.setenv("MAILBENDER_IMAP_USER", "u")
+    monkeypatch.setenv("MAILBENDER_IMAP_PASSWORD", "p")
+    from mailbender.config import load_config
+    cfg = load_config()
+    assert cfg.web_password.get_secret_value() == "hunter2"
+    assert cfg.secret_key.get_secret_value() == "s3cret-key"
+
+
+def test_web_fields_default_to_none(monkeypatch):
+    monkeypatch.setenv("MAILBENDER_DATABASE_URL", "postgresql+psycopg://u:p@h/db")
+    monkeypatch.setenv("MAILBENDER_IMAP_HOST", "h")
+    monkeypatch.setenv("MAILBENDER_IMAP_USER", "u")
+    monkeypatch.setenv("MAILBENDER_IMAP_PASSWORD", "p")
+    monkeypatch.delenv("MAILBENDER_WEB_PASSWORD", raising=False)
+    monkeypatch.delenv("MAILBENDER_SECRET_KEY", raising=False)
+    from mailbender.config import load_config
+    cfg = load_config()
+    assert cfg.web_password is None
+    assert cfg.secret_key is None

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block shell %}
+<div class="topbar">
+  <span class="brand">mailbender</span>
+  <span class="modes">
+    <a class="mode active" href="/app">💬 chat</a>
+    <a class="mode" href="/app/operator">⚙ operator</a>
+  </span>
+  <span class="status"><span class="dot"></span> <a href="/logout">logout</a></span>
+</div>
+<div class="content">
+  <aside class="sidebar">
+    <form method="post" action="/app/chat/new">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit">+ new chat</button>
+    </form>
+    {% for conv in conversations %}
+      <a href="/app/chat/{{ conv.id }}"
+         class="{{ 'active' if active and conv.id == active.id else '' }}">
+        {{ conv.title or 'untitled' }}</a>
+    {% endfor %}
+  </aside>
+  <main style="flex:1">
+    <div id="thread">
+      {% if active %}
+        {% for m in active.messages %}{% include "_chat_turn.html" %}{% endfor %}
+      {% else %}
+        <p class="subtitle">Start a new chat to ask about your mailbox.</p>
+      {% endif %}
+    </div>
+    {% if active %}
+    <form hx-post="/app/chat/{{ active.id }}/message" hx-target="#thread"
+          hx-swap="beforeend" hx-on::after-request="this.reset()">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="text" name="question" placeholder="Ask anything…" autofocus
+             style="width:80%">
+      <button type="submit">↵</button>
+    </form>
+    {% endif %}
+  </main>
+</div>
+{% endblock %}

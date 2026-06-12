@@ -1,9 +1,12 @@
+import secrets
 import warnings
 from sqlalchemy.orm import sessionmaker
 from mailbender.config import load_config
 from mailbender.store.db import make_engine
 from mailbender.store.repository import Repository
 from mailbender.api.app import create_app
+from mailbender.web.security import WebSecurity
+from mailbender.web.mount import mount_web
 
 
 def _build_imap(cfg):
@@ -58,6 +61,18 @@ def production_app():
             "MAILBENDER_API_TOKEN is unset; the API will reject every request. "
             "Set it to enable authenticated access.")
     app = create_app(api_token=token)
+
+    secret_key = cfg.secret_key.get_secret_value() if cfg.secret_key else ""
+    if not secret_key:
+        secret_key = secrets.token_urlsafe(32)
+        warnings.warn(
+            "MAILBENDER_SECRET_KEY is unset; using an ephemeral key. Web "
+            "sessions will not survive restarts or span workers. Set it to "
+            "stabilize sessions.")
+    web_password = cfg.web_password.get_secret_value() if cfg.web_password else ""
+    app.state.web_security = WebSecurity(secret_key=secret_key, password=web_password)
+    mount_web(app)
+    app.state.schedule_minutes = cfg.schedule_minutes
 
     app.state.repo_factory = lambda: Repository(SessionLocal())
     app.state.chat_factory = lambda: _build_chat(cfg, SessionLocal())

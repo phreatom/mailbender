@@ -1,0 +1,17 @@
+{% extends "operator/base.html" %}
+{% block operator %}
+<table><thead><tr><th>category</th><th>folder</th><th></th></tr></thead>
+<tbody>{% for m in mappings %}<tr>
+  <td>{{ m.category_name }}</td><td>{{ m.target_folder }}</td>
+  <td><form method="post" action="/app/operator/mappings/remove">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="category" value="{{ m.category_name }}">
+    <button>remove</button></form></td>
+</tr>{% endfor %}</tbody></table>
+<form method="post" action="/app/operator/mappings/add" style="margin-top:10px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input name="category" placeholder="category">
+  <input name="folder" placeholder="target folder">
+  <button>add</button>
+</form>
+{% endblock %}

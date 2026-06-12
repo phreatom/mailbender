@@ -1,0 +1,11 @@
+<div id="priorities" hx-get="/app/operator/priorities"
+     hx-trigger="every 5s" hx-swap="outerHTML">
+  {% for g in groups %}
+    <div class="prio-{{ g.priority }}" style="font-weight:700">
+      {{ g.priority | upper }} · {{ g.count }}</div>
+    {% for r in g.rows %}
+      <div style="padding-left:12px">{{ r.uid }}
+        <span class="subtitle">· {{ r.category or '—' }}</span></div>
+    {% endfor %}
+  {% endfor %}
+</div>

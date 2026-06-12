@@ -1,8 +1,10 @@
+import json
 from sqlalchemy import select, func, desc, case
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.dialects.postgresql import insert
 from mailbender.store.models import (
     ProcessedMail, Category, RunHistory, AuditLog, FolderMapping,
+    Conversation, ChatMessage,
 )
 
 
@@ -103,3 +105,27 @@ class Repository:
         self.session.delete(obj)
         self.session.commit()
         return True
+
+    def create_conversation(self, title: str) -> Conversation:
+        conv = Conversation(title=title)
+        self.session.add(conv)
+        self.session.commit()
+        self.session.refresh(conv)
+        return conv
+
+    def list_conversations(self):
+        stmt = select(Conversation).order_by(desc(Conversation.created_at))
+        return self.session.execute(stmt).scalars().all()
+
+    def get_conversation(self, conversation_id: int):
+        stmt = (select(Conversation)
+                .options(selectinload(Conversation.messages))
+                .where(Conversation.id == conversation_id))
+        return self.session.execute(stmt).scalar_one_or_none()
+
+    def append_message(self, conversation_id: int, role: str, text: str,
+                       sources: list[dict]):
+        self.session.add(ChatMessage(
+            conversation_id=conversation_id, role=role, text=text,
+            sources_json=json.dumps(sources)))
+        self.session.commit()

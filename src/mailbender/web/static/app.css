@@ -1,0 +1,30 @@
+:root{--bg:#0c0f12;--panel:#11161a;--line:#1c2a23;--fg:#cfeada;--accent:#39d98a;--dim:#5d6b63;--high:#ff5f56;--med:#ffbd2e}
+*{box-sizing:border-box}
+body.term{margin:0;background:var(--bg);color:var(--fg);font-family:'SF Mono',Menlo,Consolas,monospace;font-size:14px}
+a{color:var(--accent);text-decoration:none}
+.brand{font-weight:700;color:#eafff4}
+.err{color:var(--high)}
+.subtitle{color:var(--dim)}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:28px;display:flex;flex-direction:column;gap:12px;min-width:300px}
+.login-card input{background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--fg);padding:9px;font-family:inherit}
+.login-card button{background:var(--accent);border:none;border-radius:6px;color:var(--bg);font-weight:700;padding:9px;cursor:pointer;font-family:inherit}
+.topbar{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.modes{display:flex;gap:4px;border:1px solid var(--line);border-radius:18px;padding:2px}
+.mode{padding:3px 12px;border-radius:14px;color:var(--dim)}
+.mode.active{background:#1b2a24;color:var(--accent)}
+.status{margin-left:auto;color:var(--dim)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.content{padding:16px;display:flex;gap:16px}
+.sidebar{min-width:150px;border-right:1px solid var(--line);padding-right:10px;display:flex;flex-direction:column;gap:6px}
+.sidebar a{color:var(--dim)}
+.sidebar a.active{background:#1b2a24;color:var(--accent);border-radius:5px;padding:0 6px}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:400}
+.prio-high{color:var(--high)} .prio-medium{color:var(--med)} .prio-low{color:var(--dim)}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;flex:1}
+.bubble{max-width:80%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin:6px 0;background:var(--panel)}
+.bubble.user{margin-left:auto;background:#1b2a24;border-radius:10px 10px 2px 10px}
+.chip{font-size:11px;color:var(--accent);border:1px solid #2a3a32;border-radius:4px;padding:1px 6px;cursor:pointer}
+.ok{color:var(--accent)}
