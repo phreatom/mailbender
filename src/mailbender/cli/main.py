@@ -117,5 +117,117 @@ def status(ctx: typer.Context):
             f"reachable: {reachable}")
 
 
+@app.command()
+def chat(ctx: typer.Context, question: str):
+    """Ask a question about the mailbox."""
+    data = _api(ctx, lambda c: c.chat(question))
+    render.chat(data, ctx.obj.json)
+
+
+@app.command()
+def run(ctx: typer.Context,
+        type: str = typer.Option("main", "--type", help="main|style|feedback")):
+    """Trigger a run now."""
+    data = _api(ctx, lambda c: c.run(type))
+    if ctx.obj.json:
+        render.emit_json(data)
+    else:
+        render.confirm(f"{data.get('run_type', type)} run triggered.")
+
+
+@app.command()
+def priorities(ctx: typer.Context):
+    """List processed mail sorted by priority."""
+    data = _api(ctx, lambda c: c.priorities())
+    render.priorities(data, ctx.obj.json)
+
+
+@app.command()
+def history(ctx: typer.Context, limit: int = typer.Option(50, "--limit")):
+    """Show recent run history."""
+    data = _api(ctx, lambda c: c.history(limit))
+    render.history(data, ctx.obj.json)
+
+
+@app.command()
+def audit(ctx: typer.Context, limit: int = typer.Option(50, "--limit")):
+    """Show recent audit-log entries."""
+    data = _api(ctx, lambda c: c.audit(limit))
+    render.audit(data, ctx.obj.json)
+
+
+categories_app = typer.Typer(help="Manage categories.")
+app.add_typer(categories_app, name="categories")
+
+
+@categories_app.command("list")
+def categories_list(ctx: typer.Context):
+    """List configured categories."""
+    data = _api(ctx, lambda c: c.categories_list())
+    render.categories(data, ctx.obj.json)
+
+
+@categories_app.command("add")
+def categories_add(ctx: typer.Context, name: str,
+                   description: str = typer.Option("", "--description")):
+    """Add a category."""
+    data = _api(ctx, lambda c: c.categories_add(name, description))
+    if ctx.obj.json:
+        render.emit_json(data)
+    else:
+        render.confirm(f"Added category: {name}")
+
+
+@categories_app.command("remove")
+def categories_remove(ctx: typer.Context, name: str):
+    """Remove a category."""
+    data = _api(ctx, lambda c: c.categories_remove(name))
+    if ctx.obj.json:
+        render.emit_json(data)
+    else:
+        render.confirm(f"Removed category: {name}")
+
+
+@categories_app.command("seed")
+def categories_seed(ctx: typer.Context):
+    """Add the default category set (idempotent)."""
+    data = _api(ctx, lambda c: c.categories_seed())
+    if ctx.obj.json:
+        render.emit_json(data)
+    else:
+        render.confirm(f"Seeded {data.get('added', 0)} categories.")
+
+
+mappings_app = typer.Typer(help="Manage category-to-folder mappings.")
+app.add_typer(mappings_app, name="mappings")
+
+
+@mappings_app.command("list")
+def mappings_list(ctx: typer.Context):
+    """List category-to-folder mappings."""
+    data = _api(ctx, lambda c: c.mappings_list())
+    render.mappings(data, ctx.obj.json)
+
+
+@mappings_app.command("add")
+def mappings_add(ctx: typer.Context, category: str, folder: str):
+    """Map a category to a target IMAP folder."""
+    data = _api(ctx, lambda c: c.mappings_add(category, folder))
+    if ctx.obj.json:
+        render.emit_json(data)
+    else:
+        render.confirm(f"Mapped {category} -> {folder}")
+
+
+@mappings_app.command("remove")
+def mappings_remove(ctx: typer.Context, category: str):
+    """Remove a category-to-folder mapping."""
+    data = _api(ctx, lambda c: c.mappings_remove(category))
+    if ctx.obj.json:
+        render.emit_json(data)
+    else:
+        render.confirm(f"Removed mapping: {category}")
+
+
 if __name__ == "__main__":
     app()

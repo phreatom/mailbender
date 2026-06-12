@@ -61,3 +61,83 @@ def test_logout_removes_config(monkeypatch, tmp_path):
     result = runner.invoke(app, ["logout"])
     assert result.exit_code == 0
     assert not path.exists()
+
+
+def test_priorities_renders_human(monkeypatch):
+    monkeypatch.setattr(main, "resolve_config",
+                        lambda **kw: ClientConfig(url="http://api", token="tok"))
+
+    def handler(request):
+        assert request.url.path == "/priorities"
+        return httpx.Response(200, json=[{"uid": "1", "priority": "high", "category": "X"}])
+
+    _patch_client(monkeypatch, handler)
+    result = runner.invoke(app, ["priorities"])
+    assert result.exit_code == 0
+    assert "high" in result.stdout
+
+
+def test_priorities_json(monkeypatch):
+    monkeypatch.setattr(main, "resolve_config",
+                        lambda **kw: ClientConfig(url="http://api", token="tok"))
+    rows = [{"uid": "1", "priority": "high", "category": "X"}]
+
+    def handler(request):
+        return httpx.Response(200, json=rows)
+
+    _patch_client(monkeypatch, handler)
+    result = runner.invoke(app, ["--json", "priorities"])
+    assert result.exit_code == 0
+    assert json.loads(result.stdout) == rows
+
+
+def test_run_sends_type(monkeypatch):
+    monkeypatch.setattr(main, "resolve_config",
+                        lambda **kw: ClientConfig(url="http://api", token="tok"))
+    seen = {}
+
+    def handler(request):
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"status": "ok", "run_type": "style"})
+
+    _patch_client(monkeypatch, handler)
+    result = runner.invoke(app, ["run", "--type", "style"])
+    assert result.exit_code == 0
+    assert seen["body"] == {"run_type": "style"}
+
+
+def test_categories_add(monkeypatch):
+    monkeypatch.setattr(main, "resolve_config",
+                        lambda **kw: ClientConfig(url="http://api", token="tok"))
+    seen = {}
+
+    def handler(request):
+        seen["method"] = request.method
+        seen["path"] = request.url.path
+        return httpx.Response(200, json={"name": "Rechnung", "description": ""})
+
+    _patch_client(monkeypatch, handler)
+    result = runner.invoke(app, ["categories", "add", "Rechnung"])
+    assert result.exit_code == 0
+    assert seen["method"] == "POST" and seen["path"] == "/categories"
+
+
+def test_chat_renders(monkeypatch):
+    monkeypatch.setattr(main, "resolve_config",
+                        lambda **kw: ClientConfig(url="http://api", token="tok"))
+
+    def handler(request):
+        return httpx.Response(200, json={"text": "Sarah approved", "sources": []})
+
+    _patch_client(monkeypatch, handler)
+    result = runner.invoke(app, ["chat", "what did sarah say?"])
+    assert result.exit_code == 0
+    assert "Sarah approved" in result.stdout
+
+
+def test_unconfigured_api_command_exits_nonzero(monkeypatch):
+    monkeypatch.setattr(main, "resolve_config",
+                        lambda **kw: ClientConfig(url=None, token=None))
+    result = runner.invoke(app, ["priorities"])
+    assert result.exit_code != 0
+    assert "login" in (result.stdout + result.stderr).lower()
