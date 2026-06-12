@@ -1,6 +1,7 @@
 import typer
 from mailbender import __version__
 from mailbender.scheduler.loop import run_loop
+from mailbender.audit.log import AuditLogger
 
 app = typer.Typer(help="Mailbender CLI")
 
@@ -70,6 +71,7 @@ def add_category(name: str, description: str = ""):
     """Add a category."""
     repo = _make_repo()
     repo.add_category(name, description)
+    AuditLogger(repo.session).record("cli", "category_add", name)
     typer.echo(f"Added category: {name}")
 
 
@@ -77,7 +79,10 @@ def add_category(name: str, description: str = ""):
 def remove_category(name: str):
     """Remove a category by name."""
     repo = _make_repo()
-    if repo.remove_category(name):
+    removed = repo.remove_category(name)
+    AuditLogger(repo.session).record(
+        "cli", "category_remove", name, "success" if removed else "error")
+    if removed:
         typer.echo(f"Removed category: {name}")
     else:
         typer.echo(f"No such category: {name}")
@@ -97,6 +102,7 @@ def seed_categories():
 def run():
     """Trigger a main run now."""
     runner = _make_runner()
+    AuditLogger(runner.session).record("cli", "run_triggered", "main")
     runner.run_main()
     typer.echo("Main run complete.")
 
@@ -117,21 +123,29 @@ def scheduler():
 @app.command("run-style")
 def run_style():
     """Bootstrap the writing-style profile from the Sent folder now."""
-    _make_runner().run_style()
+    runner = _make_runner()
+    AuditLogger(runner.session).record("cli", "run_triggered", "style")
+    runner.run_style()
     typer.echo("Style run complete.")
 
 
 @app.command("run-feedback")
 def run_feedback():
     """Run the draft-vs-sent feedback pass now."""
-    _make_runner().run_feedback()
+    runner = _make_runner()
+    AuditLogger(runner.session).record("cli", "run_triggered", "feedback")
+    runner.run_feedback()
     typer.echo("Feedback run complete.")
 
 
 @app.command()
 def chat(question: str):
     """Ask a question about the mailbox."""
-    answer = _make_chat().ask(question)
+    chat_obj = _make_chat()
+    answer = chat_obj.ask(question)
+    auditor = AuditLogger(chat_obj.session)
+    auditor.record("cli", "chat_query")
+    auditor.record("cli", "provider_use", type(chat_obj.provider).__name__)
     typer.echo(answer.text)
     if answer.sources:
         typer.echo("Quellen:")
@@ -170,7 +184,9 @@ def priorities():
 @app.command("add-mapping")
 def add_mapping(category: str, folder: str):
     """Map a category to a target IMAP folder (upserts)."""
-    _make_repo().add_mapping(category, folder)
+    repo = _make_repo()
+    repo.add_mapping(category, folder)
+    AuditLogger(repo.session).record("cli", "mapping_add", category)
     typer.echo(f"Mapped {category} -> {folder}")
 
 
@@ -184,7 +200,11 @@ def mappings():
 @app.command("remove-mapping")
 def remove_mapping(category: str):
     """Remove a category-to-folder mapping."""
-    if _make_repo().remove_mapping(category):
+    repo = _make_repo()
+    removed = repo.remove_mapping(category)
+    AuditLogger(repo.session).record(
+        "cli", "mapping_remove", category, "success" if removed else "error")
+    if removed:
         typer.echo(f"Removed mapping: {category}")
     else:
         typer.echo(f"No such mapping: {category}")

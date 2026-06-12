@@ -25,7 +25,17 @@ def test_categories_list_command(monkeypatch):
     assert "Newsletter" in result.stdout
 
 
+class FakeAuditor:
+    def __init__(self, session):
+        pass
+
+    def record(self, actor, action, target="", result="success"):
+        pass
+
+
 class RecordingRepo:
+    session = object()
+
     def __init__(self, existing=None, remove_result=True):
         self._existing = list(existing or [])
         self._remove_result = remove_result
@@ -48,6 +58,7 @@ def test_add_category_command(monkeypatch):
     from mailbender.cli import main
     repo = RecordingRepo()
     monkeypatch.setattr(main, "_make_repo", lambda: repo)
+    monkeypatch.setattr(main, "AuditLogger", FakeAuditor)
     result = runner.invoke(app, ["add-category", "Projekt", "--description", "Work"])
     assert result.exit_code == 0
     assert ("Projekt", "Work") in repo.added
@@ -58,6 +69,7 @@ def test_remove_category_command(monkeypatch):
     from mailbender.cli import main
     repo = RecordingRepo(remove_result=True)
     monkeypatch.setattr(main, "_make_repo", lambda: repo)
+    monkeypatch.setattr(main, "AuditLogger", FakeAuditor)
     result = runner.invoke(app, ["remove-category", "Werbung"])
     assert result.exit_code == 0
     assert repo.removed == ["Werbung"]
@@ -68,6 +80,7 @@ def test_remove_missing_category_command_exits_nonzero(monkeypatch):
     from mailbender.cli import main
     repo = RecordingRepo(remove_result=False)
     monkeypatch.setattr(main, "_make_repo", lambda: repo)
+    monkeypatch.setattr(main, "AuditLogger", FakeAuditor)
     result = runner.invoke(app, ["remove-category", "Nope"])
     assert result.exit_code != 0
 
@@ -87,6 +100,8 @@ def test_run_command_invokes_run_main(monkeypatch):
     from mailbender.cli import main
 
     class FakeRunner:
+        session = object()
+
         def __init__(self):
             self.called = False
 
@@ -95,6 +110,7 @@ def test_run_command_invokes_run_main(monkeypatch):
 
     fake = FakeRunner()
     monkeypatch.setattr(main, "_make_runner", lambda: fake)
+    monkeypatch.setattr(main, "AuditLogger", FakeAuditor)
     result = runner.invoke(app, ["run"])
     assert result.exit_code == 0
     assert fake.called is True
@@ -126,6 +142,8 @@ def test_run_style_command(monkeypatch):
     from mailbender.cli import main
 
     class FakeRunner:
+        session = object()
+
         def __init__(self):
             self.called = False
 
@@ -134,6 +152,7 @@ def test_run_style_command(monkeypatch):
 
     fake = FakeRunner()
     monkeypatch.setattr(main, "_make_runner", lambda: fake)
+    monkeypatch.setattr(main, "AuditLogger", FakeAuditor)
     result = runner.invoke(app, ["run-style"])
     assert result.exit_code == 0
     assert fake.called is True
@@ -143,12 +162,19 @@ def test_chat_command(monkeypatch):
     from mailbender.cli import main
     from mailbender.chat.chat import ChatAnswer, ChatSource
 
+    class FakeProvider:
+        pass
+
     class FakeChat:
+        session = object()
+        provider = FakeProvider()
+
         def ask(self, question):
             return ChatAnswer(text="Sarah approved it.",
                               sources=[ChatSource(uid="1", subject="Budget")])
 
     monkeypatch.setattr(main, "_make_chat", lambda: FakeChat())
+    monkeypatch.setattr(main, "AuditLogger", FakeAuditor)
     result = runner.invoke(app, ["chat", "What did Sarah say?"])
     assert result.exit_code == 0
     assert "Sarah approved it." in result.stdout
@@ -224,6 +250,8 @@ def test_mapping_commands(monkeypatch):
             self.category_name = c; self.target_folder = f
 
     class FakeRepo:
+        session = object()
+
         def add_mapping(self, category, folder):
             store[category] = folder
 
@@ -234,8 +262,59 @@ def test_mapping_commands(monkeypatch):
             return store.pop(category, None) is not None
 
     monkeypatch.setattr(main, "_make_repo", lambda: FakeRepo())
+    monkeypatch.setattr(main, "AuditLogger", FakeAuditor)
     assert runner.invoke(app, ["add-mapping", "Newsletter", "Archive/News"]).exit_code == 0
     out = runner.invoke(app, ["mappings"])
     assert "Newsletter" in out.stdout and "Archive/News" in out.stdout
     assert runner.invoke(app, ["remove-mapping", "Newsletter"]).exit_code == 0
     assert runner.invoke(app, ["remove-mapping", "Newsletter"]).exit_code == 1
+
+
+def test_add_category_audits(monkeypatch):
+    from mailbender.cli import main
+
+    recorded = []
+
+    class FakeRepo:
+        session = object()
+
+        def add_category(self, name, description=""):
+            pass
+
+    class FakeAuditor:
+        def __init__(self, session):
+            pass
+
+        def record(self, actor, action, target="", result="success"):
+            recorded.append((actor, action, target))
+
+    monkeypatch.setattr(main, "_make_repo", lambda: FakeRepo())
+    monkeypatch.setattr(main, "AuditLogger", FakeAuditor)
+    result = runner.invoke(app, ["add-category", "Rechnung"])
+    assert result.exit_code == 0
+    assert ("cli", "category_add", "Rechnung") in recorded
+
+
+def test_run_command_audits(monkeypatch):
+    from mailbender.cli import main
+
+    recorded = []
+
+    class FakeRunner:
+        session = object()
+
+        def run_main(self):
+            pass
+
+    class FakeAuditor:
+        def __init__(self, session):
+            pass
+
+        def record(self, actor, action, target="", result="success"):
+            recorded.append((actor, action, target))
+
+    monkeypatch.setattr(main, "_make_runner", lambda: FakeRunner())
+    monkeypatch.setattr(main, "AuditLogger", FakeAuditor)
+    result = runner.invoke(app, ["run"])
+    assert result.exit_code == 0
+    assert ("cli", "run_triggered", "main") in recorded
