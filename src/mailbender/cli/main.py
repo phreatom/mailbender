@@ -1,6 +1,5 @@
 import typer
 from mailbender import __version__
-from mailbender.scheduler.loop import run_loop
 from mailbender.audit.log import AuditLogger
 
 app = typer.Typer(help="Mailbender CLI")
@@ -105,19 +104,6 @@ def run():
     AuditLogger(runner.session).record("cli", "run_triggered", "main")
     runner.run_main()
     typer.echo("Main run complete.")
-
-
-@app.command()
-def scheduler():
-    """Run the periodic scheduler loop (foreground; for the scheduler container)."""
-    cfg = _load_config()
-    intervals = {
-        "main": cfg.schedule_minutes,
-        "feedback": cfg.feedback_minutes,
-        "style": cfg.style_minutes,
-    }
-    typer.echo("Starting scheduler loop...")
-    run_loop(_make_runner, intervals)
 
 
 @app.command("run-style")
