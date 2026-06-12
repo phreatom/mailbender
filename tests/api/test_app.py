@@ -33,10 +33,16 @@ def test_categories_with_valid_token():
 
 
 def test_chat_endpoint(monkeypatch):
+    import mailbender.api.app as appmod
     from mailbender.chat.chat import ChatAnswer, ChatSource
     app = create_app(api_token="t")
 
+    class FakeProvider:
+        pass
+
     class FakeChat:
+        provider = FakeProvider()
+
         def ask(self, question):
             return ChatAnswer(text="A", sources=[ChatSource(uid="1", subject="s")])
 
@@ -122,15 +128,25 @@ def test_history_and_audit_endpoints():
     assert a.json()[0]["created_at"] == "2026-06-12T09:30:00"
 
 
-def test_mapping_endpoints():
+def test_mapping_endpoints(monkeypatch):
+    import mailbender.api.app as appmod
     app = create_app(api_token="t")
     store = {}
+
+    class FakeAuditor:
+        def __init__(self, session):
+            pass
+
+        def record(self, actor, action, target="", result="success"):
+            pass
 
     class M:
         def __init__(self, c, f):
             self.category_name = c; self.target_folder = f
 
     class FakeRepo:
+        session = object()
+
         def list_mappings(self):
             return [M(c, f) for c, f in store.items()]
 
@@ -141,6 +157,7 @@ def test_mapping_endpoints():
             return store.pop(c, None) is not None
 
     app.state.repo_factory = lambda: FakeRepo()
+    monkeypatch.setattr(appmod, "AuditLogger", FakeAuditor)
     client = TestClient(app)
     h = {"Authorization": "Bearer t"}
     assert client.get("/mappings", headers=h).json() == []
@@ -163,3 +180,62 @@ def test_all_protected_endpoints_require_auth():
     assert client.request("DELETE", "/mappings/N").status_code == 401
     # /health stays public
     assert client.get("/health").status_code == 200
+
+
+def test_auth_failure_is_audited(monkeypatch):
+    import mailbender.api.app as appmod
+    app = create_app(api_token="t")
+    recorded = []
+
+    class FakeAuditor:
+        def __init__(self, session):
+            pass
+
+        def record(self, actor, action, target="", result="success"):
+            recorded.append((actor, action, result))
+
+    class FakeRepo:
+        session = object()
+
+    app.state.repo_factory = lambda: FakeRepo()
+    monkeypatch.setattr(appmod, "AuditLogger", FakeAuditor)
+    client = TestClient(app)
+    resp = client.get("/categories")  # no token
+    assert resp.status_code == 401
+    assert ("web", "auth_failure", "error") in recorded
+
+
+def test_auth_failure_without_repo_factory_does_not_crash():
+    # repo_factory is None (default) -> auditing is skipped, still 401
+    client = TestClient(create_app(api_token="t"))
+    assert client.get("/categories").status_code == 401
+
+
+def test_run_endpoint_is_audited(monkeypatch):
+    import mailbender.api.app as appmod
+    app = create_app(api_token="t")
+    recorded = []
+
+    class FakeAuditor:
+        def __init__(self, session):
+            pass
+
+        def record(self, actor, action, target="", result="success"):
+            recorded.append((actor, action, target))
+
+    class FakeRunner:
+        session = object()
+
+        def run_main(self):
+            pass
+
+    class FakeRepo:
+        session = object()
+
+    app.state.repo_factory = lambda: FakeRepo()
+    app.state.runner_factory = lambda: FakeRunner()
+    monkeypatch.setattr(appmod, "AuditLogger", FakeAuditor)
+    client = TestClient(app)
+    resp = client.post("/run", headers={"Authorization": "Bearer t"})
+    assert resp.status_code == 200
+    assert ("web", "run_triggered", "main") in recorded

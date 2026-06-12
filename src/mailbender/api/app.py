@@ -1,5 +1,13 @@
 from fastapi import FastAPI, Depends, HTTPException, Header, Body
 from mailbender.api import routes
+from mailbender.audit.log import AuditLogger
+
+
+def _audit(app, actor, action, target="", result="success"):
+    factory = app.state.repo_factory
+    if factory is None:
+        return
+    AuditLogger(factory().session).record(actor, action, target, result)
 
 
 def create_app(api_token: str) -> FastAPI:
@@ -12,6 +20,7 @@ def create_app(api_token: str) -> FastAPI:
     def require_auth(authorization: str = Header(default="")):
         expected = f"Bearer {app.state.api_token}"
         if authorization != expected:
+            _audit(app, "web", "auth_failure", result="error")
             raise HTTPException(status_code=401, detail="Unauthorized")
 
     @app.get("/health")
@@ -24,10 +33,14 @@ def create_app(api_token: str) -> FastAPI:
 
     @app.post("/chat", dependencies=[Depends(require_auth)])
     def chat(question: str = Body(..., embed=True)):
-        return routes.chat_answer(app.state.chat_factory(), question)
+        chat_obj = app.state.chat_factory()
+        _audit(app, "web", "chat_query")
+        _audit(app, "web", "provider_use", type(chat_obj.provider).__name__)
+        return routes.chat_answer(chat_obj, question)
 
     @app.post("/run", dependencies=[Depends(require_auth)])
     def run():
+        _audit(app, "web", "run_triggered", "main")
         return routes.run_main(app.state.runner_factory())
 
     @app.get("/priorities", dependencies=[Depends(require_auth)])
@@ -48,10 +61,14 @@ def create_app(api_token: str) -> FastAPI:
 
     @app.post("/mappings", dependencies=[Depends(require_auth)])
     def add_mapping(category: str = Body(...), folder: str = Body(...)):
-        return routes.add_mapping(app.state.repo_factory(), category, folder)
+        result = routes.add_mapping(app.state.repo_factory(), category, folder)
+        _audit(app, "web", "mapping_add", category)
+        return result
 
     @app.delete("/mappings/{category}", dependencies=[Depends(require_auth)])
     def remove_mapping(category: str):
-        return routes.remove_mapping(app.state.repo_factory(), category)
+        result = routes.remove_mapping(app.state.repo_factory(), category)
+        _audit(app, "web", "mapping_remove", category)
+        return result
 
     return app
