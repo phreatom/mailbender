@@ -1,5 +1,8 @@
+import time
+
 from imapclient import IMAPClient
 from mailagent.llm.provider import Email
+from mailagent.util.retry import retry
 import email as email_lib
 
 
@@ -24,9 +27,11 @@ class ImapClient:
             return False
 
     def _connect(self) -> IMAPClient:
-        client = IMAPClient(self.host, port=self.port, ssl=self.use_ssl)
-        client.login(self.user, self.password)
-        return client
+        def do():
+            client = IMAPClient(self.host, port=self.port, ssl=self.use_ssl)
+            client.login(self.user, self.password)
+            return client
+        return retry(do, sleep=time.sleep)
 
     def fetch_inbox(self) -> list[Email]:
         return self.fetch_folder("INBOX")
