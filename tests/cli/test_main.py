@@ -99,3 +99,41 @@ def test_run_command_invokes_run_main(monkeypatch):
     assert result.exit_code == 0
     assert fake.called is True
     assert "complete" in result.stdout.lower()
+
+
+def test_scheduler_command_invokes_run_loop(monkeypatch):
+    from mailagent.cli import main
+
+    captured = {}
+
+    def fake_run_loop(build_runner_fn, intervals, **kwargs):
+        captured["intervals"] = intervals
+
+    class FakeCfg:
+        schedule_minutes = 15
+        feedback_minutes = 60
+        style_minutes = 0
+
+    monkeypatch.setattr(main, "_load_config", lambda: FakeCfg())
+    monkeypatch.setattr(main, "run_loop", fake_run_loop)
+    monkeypatch.setattr(main, "_make_runner", lambda: object())
+    result = runner.invoke(app, ["scheduler"])
+    assert result.exit_code == 0
+    assert captured["intervals"] == {"main": 15, "feedback": 60, "style": 0}
+
+
+def test_run_style_command(monkeypatch):
+    from mailagent.cli import main
+
+    class FakeRunner:
+        def __init__(self):
+            self.called = False
+
+        def run_style(self):
+            self.called = True
+
+    fake = FakeRunner()
+    monkeypatch.setattr(main, "_make_runner", lambda: fake)
+    result = runner.invoke(app, ["run-style"])
+    assert result.exit_code == 0
+    assert fake.called is True

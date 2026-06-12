@@ -1,5 +1,6 @@
 import typer
 from mailagent import __version__
+from mailagent.scheduler.loop import run_loop
 
 app = typer.Typer(help="Mailagent CLI")
 
@@ -15,6 +16,11 @@ def _make_repo():
     from mailagent.store.repository import Repository
     cfg = load_config()
     return Repository(_make_session(cfg))
+
+
+def _load_config():
+    from mailagent.config import load_config
+    return load_config()
 
 
 def _make_runner():
@@ -82,6 +88,33 @@ def run():
     runner = _make_runner()
     runner.run_main()
     typer.echo("Main run complete.")
+
+
+@app.command()
+def scheduler():
+    """Run the periodic scheduler loop (foreground; for the scheduler container)."""
+    cfg = _load_config()
+    intervals = {
+        "main": cfg.schedule_minutes,
+        "feedback": cfg.feedback_minutes,
+        "style": cfg.style_minutes,
+    }
+    typer.echo("Starting scheduler loop...")
+    run_loop(_make_runner, intervals)
+
+
+@app.command("run-style")
+def run_style():
+    """Bootstrap the writing-style profile from the Sent folder now."""
+    _make_runner().run_style()
+    typer.echo("Style run complete.")
+
+
+@app.command("run-feedback")
+def run_feedback():
+    """Run the draft-vs-sent feedback pass now."""
+    _make_runner().run_feedback()
+    typer.echo("Feedback run complete.")
 
 
 if __name__ == "__main__":
