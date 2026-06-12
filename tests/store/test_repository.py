@@ -1,6 +1,6 @@
 import pytest
-from mailagent.store.models import Base
-from mailagent.store.repository import Repository
+from mailbender.store.models import Base
+from mailbender.store.repository import Repository
 
 
 @pytest.fixture
@@ -58,7 +58,7 @@ def test_last_run_at_returns_none_then_timestamp(repo):
 
 
 def test_recent_audit_returns_entries(repo):
-    from mailagent.audit.log import AuditLogger
+    from mailbender.audit.log import AuditLogger
     AuditLogger(repo.session).record("scheduler", "draft_append", "uid-1")
     rows = repo.recent_audit(limit=10)
     assert len(rows) == 1

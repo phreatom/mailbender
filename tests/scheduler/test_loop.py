@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from mailagent.scheduler.loop import _due, run_loop
+from mailbender.scheduler.loop import _due, run_loop
 
 
 def test_due_logic():

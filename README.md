@@ -18,7 +18,7 @@ IMAPClient · pluggable LLM provider (cloud default, configurable).
 
    ```bash
    cp .env.example .env
-   # set IMAP credentials, LLM provider/key, and MAILAGENT_API_TOKEN
+   # set IMAP credentials, LLM provider/key, and MAILBENDER_API_TOKEN
    ```
 
 2. Start the stack (app + scheduler + Postgres with pgvector):
@@ -28,11 +28,12 @@ IMAPClient · pluggable LLM provider (cloud default, configurable).
    ```
 
    This starts three services: `postgres`, the `app` (web API), and a
-   `scheduler` that runs the periodic main/feedback/style passes. Database
-   migrations (`alembic upgrade head`) run automatically on container start.
+   `scheduler` that runs the periodic main/feedback/style passes. The `app` and
+   `scheduler` wait for Postgres to pass its health check, then run database
+   migrations (`alembic upgrade head`) automatically on container start.
 
 3. The web API is now on http://localhost:8000 (`GET /health` is public; all
-   other endpoints require `Authorization: Bearer $MAILAGENT_API_TOKEN`):
+   other endpoints require `Authorization: Bearer $MAILBENDER_API_TOKEN`):
 
    - `POST /chat` `{"question": "..."}` — ask about the mailbox
    - `POST /run` — trigger a main run now
@@ -44,33 +45,45 @@ IMAPClient · pluggable LLM provider (cloud default, configurable).
 ## Scheduling
 
 The `scheduler` service loops continuously, firing each run type on its own
-cadence (minutes): `MAILAGENT_SCHEDULE_MINUTES` (main), `MAILAGENT_FEEDBACK_MINUTES`,
-`MAILAGENT_STYLE_MINUTES`. A value of `0` disables automatic runs for that type
+cadence (minutes): `MAILBENDER_SCHEDULE_MINUTES` (main), `MAILBENDER_FEEDBACK_MINUTES`,
+`MAILBENDER_STYLE_MINUTES`. A value of `0` disables automatic runs for that type
 (style learning defaults to `0` = manual/CLI only).
 
 ## CLI
 
 ```bash
-docker compose exec app mailagent --help
-docker compose exec app mailagent scheduler          # run the loop in foreground
-docker compose exec app mailagent run                # one main pass now
-docker compose exec app mailagent run-style          # bootstrap style from Sent
-docker compose exec app mailagent run-feedback       # draft-vs-sent feedback pass
-docker compose exec app mailagent chat "What did Sarah say about the budget?"
-docker compose exec app mailagent priorities         # mail by priority (high first)
-docker compose exec app mailagent history            # recent run history
-docker compose exec app mailagent audit              # recent audit-log entries
-docker compose exec app mailagent categories         # list categories
-docker compose exec app mailagent add-mapping Newsletter Archive/News
-docker compose exec app mailagent mappings
-docker compose exec app mailagent remove-mapping Newsletter
+docker compose exec app mailbender --help
+docker compose exec app mailbender scheduler          # run the loop in foreground
+docker compose exec app mailbender run                # one main pass now
+docker compose exec app mailbender run-style          # bootstrap style from Sent
+docker compose exec app mailbender run-feedback       # draft-vs-sent feedback pass
+docker compose exec app mailbender chat "What did Sarah say about the budget?"
+docker compose exec app mailbender priorities         # mail by priority (high first)
+docker compose exec app mailbender history            # recent run history
+docker compose exec app mailbender audit              # recent audit-log entries
+docker compose exec app mailbender categories         # list categories
+docker compose exec app mailbender add-mapping Newsletter Archive/News
+docker compose exec app mailbender mappings
+docker compose exec app mailbender remove-mapping Newsletter
 ```
+
+## Audit log
+
+Security-relevant actions are written to an append-only audit log, viewable via
+`mailbender audit` or `GET /audit`: failed API auth attempts, configuration
+changes (categories and folder mappings), manually triggered runs, chat queries
+(without the question or any mail content), and mailbox writes (moves and
+draft-appends). Each entry records a timestamp, actor, action, target, and
+result — never credentials, API keys, or message content.
 
 ## Configuration
 
-All configuration is read from environment variables (prefix `MAILAGENT_`); see
-`.env.example` for the full list. IMAP settings use the nested `MAILAGENT_IMAP_`
-prefix (host, user, password, port, drafts/sent folders).
+All configuration is read from environment variables (prefix `MAILBENDER_`); see
+`.env.example` for the full list. IMAP settings use the nested `MAILBENDER_IMAP_`
+prefix (host, user, password, port, drafts/sent folders). The web API token is
+`MAILBENDER_API_TOKEN`; the deployed server (`uvicorn
+mailbender.api.bootstrap:production_app --factory`) reads it from the
+environment and requires it on every endpoint except `GET /health`.
 
 ## Development
 

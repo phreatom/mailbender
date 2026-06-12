@@ -1,3 +1,3 @@
 def test_package_imports():
-    import mailagent
-    assert mailagent.__version__ == "0.1.0"
+    import mailbender
+    assert mailbender.__version__ == "0.1.0"

@@ -1,7 +1,7 @@
-from mailagent.llm.fake import FakeLLMProvider
-from mailagent.llm.provider import Email
-from mailagent.pipeline.classifier import Classifier
-from mailagent.pipeline.prioritizer import Prioritizer
+from mailbender.llm.fake import FakeLLMProvider
+from mailbender.llm.provider import Email
+from mailbender.pipeline.classifier import Classifier
+from mailbender.pipeline.prioritizer import Prioritizer
 
 EMAIL = Email(uid="1", subject="s", sender="a@b.c", body="b")
 

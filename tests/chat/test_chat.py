@@ -1,7 +1,7 @@
 import pytest
-from mailagent.store.models import Base, MailIndex
-from mailagent.llm.fake import FakeLLMProvider
-from mailagent.chat.chat import Chat
+from mailbender.store.models import Base, MailIndex
+from mailbender.llm.fake import FakeLLMProvider
+from mailbender.chat.chat import Chat
 
 
 @pytest.fixture

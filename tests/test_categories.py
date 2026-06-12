@@ -1,7 +1,7 @@
 import pytest
-from mailagent.store.models import Base
-from mailagent.store.repository import Repository
-from mailagent.categories import DEFAULT_CATEGORIES, seed_default_categories
+from mailbender.store.models import Base
+from mailbender.store.repository import Repository
+from mailbender.categories import DEFAULT_CATEGORIES, seed_default_categories
 
 
 @pytest.fixture

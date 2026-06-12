@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy import select
-from mailagent.store.models import Base, ReferenceDraft, StyleExample
-from mailagent.llm.provider import Email
-from mailagent.learning.feedback_learner import FeedbackLearner
+from mailbender.store.models import Base, ReferenceDraft, StyleExample
+from mailbender.llm.provider import Email
+from mailbender.learning.feedback_learner import FeedbackLearner
 
 
 class FakeImap:

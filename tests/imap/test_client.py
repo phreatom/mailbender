@@ -2,7 +2,7 @@ import smtplib
 import time
 from email.message import EmailMessage
 import pytest
-from mailagent.imap.client import ImapClient
+from mailbender.imap.client import ImapClient
 
 
 def _send(subject, body):
@@ -38,7 +38,7 @@ def test_append_draft(imap):
 
 
 def test_connect_retries_transient_failure(monkeypatch):
-    import mailagent.imap.client as mod
+    import mailbender.imap.client as mod
 
     monkeypatch.setattr(mod.time, "sleep", lambda s: None)
     state = {"n": 0}
@@ -57,3 +57,54 @@ def test_connect_retries_transient_failure(monkeypatch):
     conn = client._connect()
     assert isinstance(conn, FakeIMAP)
     assert state["n"] == 2
+
+
+def test_move_retries_transient_failure(monkeypatch):
+    import mailbender.imap.client as mod
+
+    monkeypatch.setattr(mod.time, "sleep", lambda s: None)
+    state = {"move": 0}
+
+    class FakeConn:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def select_folder(self, folder):
+            pass
+
+        def move(self, uids, target):
+            state["move"] += 1
+            if state["move"] < 2:
+                raise OSError("temporary")
+
+    client = mod.ImapClient(host="h", port=1, user="u", password="p", use_ssl=False)
+    monkeypatch.setattr(client, "_connect", lambda: FakeConn())
+    client.move("5", "Archive")
+    assert state["move"] == 2
+
+
+def test_append_retries_transient_failure(monkeypatch):
+    import mailbender.imap.client as mod
+
+    monkeypatch.setattr(mod.time, "sleep", lambda s: None)
+    state = {"append": 0}
+
+    class FakeConn:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def append(self, folder, data):
+            state["append"] += 1
+            if state["append"] < 2:
+                raise OSError("temporary")
+
+    client = mod.ImapClient(host="h", port=1, user="u", password="p", use_ssl=False)
+    monkeypatch.setattr(client, "_connect", lambda: FakeConn())
+    client.append_draft("Subject", "Body", folder="Drafts")
+    assert state["append"] == 2

@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import select
-from mailagent.store.models import Base, AuditLog
-from mailagent.audit.log import AuditLogger
+from mailbender.store.models import Base, AuditLog
+from mailbender.audit.log import AuditLogger
 
 
 @pytest.fixture

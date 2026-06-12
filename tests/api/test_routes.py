@@ -1,5 +1,5 @@
-from mailagent.api import routes
-from mailagent.chat.chat import ChatAnswer, ChatSource
+from mailbender.api import routes
+from mailbender.chat.chat import ChatAnswer, ChatSource
 
 
 class FakeChat:

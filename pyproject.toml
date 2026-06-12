@@ -1,5 +1,5 @@
 [project]
-name = "mailagent"
+name = "mailbender"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
@@ -31,4 +31,4 @@ where = ["src"]
 pythonpath = ["src"]
 
 [project.scripts]
-mailagent = "mailagent.cli.main:app"
+mailbender = "mailbender.cli.main:app"
