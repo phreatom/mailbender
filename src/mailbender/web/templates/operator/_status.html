@@ -1,0 +1,17 @@
+<div style="display:flex;gap:10px" id="status"
+     hx-get="/app/operator/status" hx-trigger="every 5s" hx-swap="outerHTML">
+  <div class="tile"><div class="subtitle">last run</div>
+    <div class="ok">{{ last_run or '—' }}</div></div>
+  <div class="tile"><div class="subtitle">processed</div>
+    <div>{{ processed_count }}</div></div>
+  <div class="tile"><div class="subtitle">next run</div>
+    <div>{{ countdown }}</div></div>
+  <div class="tile"><div class="subtitle">trigger</div>
+    <form hx-post="/app/operator/run" hx-swap="none">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button name="run_type" value="main">▶ main</button>
+      <button name="run_type" value="style">style</button>
+      <button name="run_type" value="feedback">feedback</button>
+    </form>
+  </div>
+</div>

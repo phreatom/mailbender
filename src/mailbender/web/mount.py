@@ -64,3 +64,6 @@ def mount_web(app: FastAPI) -> None:
 
     from mailbender.web.chat_routes import register_chat_routes
     register_chat_routes(app, templates, require_web_session)
+
+    from mailbender.web.operator_routes import register_operator_routes
+    register_operator_routes(app, templates, require_web_session)

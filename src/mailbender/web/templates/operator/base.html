@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block shell %}
+<div class="topbar">
+  <span class="brand">mailbender</span>
+  <span class="modes">
+    <a class="mode" href="/app">💬 chat</a>
+    <a class="mode active" href="/app/operator">⚙ operator</a>
+  </span>
+  <span class="status"><span class="dot"></span> <a href="/logout">logout</a></span>
+</div>
+<div class="content">
+  <aside class="sidebar">
+    <a href="/app/operator" class="{{ 'active' if nav=='overview' else '' }}">overview</a>
+    <a href="/app/operator/priorities" class="{{ 'active' if nav=='priorities' else '' }}">priorities</a>
+    <a href="/app/operator/runs" class="{{ 'active' if nav=='runs' else '' }}">runs &amp; history</a>
+    <a href="/app/operator/audit" class="{{ 'active' if nav=='audit' else '' }}">audit log</a>
+    <div class="subtitle" style="margin-top:8px">CONFIG</div>
+    <a href="/app/operator/categories" class="{{ 'active' if nav=='categories' else '' }}">categories</a>
+    <a href="/app/operator/mappings" class="{{ 'active' if nav=='mappings' else '' }}">mappings</a>
+  </aside>
+  <main style="flex:1">{% block operator %}{% endblock %}</main>
+</div>
+{% endblock %}
