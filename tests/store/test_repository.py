@@ -40,3 +40,18 @@ def test_remove_category(repo):
 
 def test_remove_missing_category_returns_false(repo):
     assert repo.remove_category("DoesNotExist") is False
+
+
+def test_record_and_query_run_history(repo):
+    repo.record_run_step("main", "uid-1", "classify", "success", "Newsletter")
+    repo.record_run_step("main", None, "run", "success")
+    runs = repo.recent_runs(limit=10)
+    assert len(runs) == 2
+    assert {r.step for r in runs} == {"classify", "run"}
+
+
+def test_last_run_at_returns_none_then_timestamp(repo):
+    assert repo.last_run_at("main") is None
+    repo.record_run_step("main", None, "run", "success")
+    assert repo.last_run_at("main") is not None
+    assert repo.last_run_at("feedback") is None

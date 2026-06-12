@@ -1,7 +1,9 @@
-from sqlalchemy import select, func
+from sqlalchemy import select, func, desc, case
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
-from mailagent.store.models import ProcessedMail, Category
+from mailagent.store.models import (
+    ProcessedMail, Category, RunHistory, AuditLog, FolderMapping,
+)
 
 
 class Repository:
@@ -43,3 +45,22 @@ class Repository:
         self.session.delete(category)
         self.session.commit()
         return True
+
+    def record_run_step(self, run_type, uid, step, result, detail=""):
+        self.session.add(RunHistory(
+            run_type=run_type, uid=uid, step=step,
+            result=result, detail=detail,
+        ))
+        self.session.commit()
+
+    def last_run_at(self, run_type):
+        stmt = (select(func.max(RunHistory.created_at))
+                .where(RunHistory.run_type == run_type)
+                .where(RunHistory.step == "run"))
+        return self.session.execute(stmt).scalar_one_or_none()
+
+    def recent_runs(self, limit: int = 50):
+        stmt = (select(RunHistory)
+                .order_by(desc(RunHistory.created_at))
+                .limit(limit))
+        return self.session.execute(stmt).scalars().all()
