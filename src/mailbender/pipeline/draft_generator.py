@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from mailbender.llm.provider import LLMProvider, Email
 from mailbender.store.models import ReferenceDraft
 
@@ -9,6 +10,13 @@ class DraftGenerator:
         self.session = session
 
     def generate(self, email: Email, style_examples: list[str]) -> str:
+        existing = self.session.execute(
+            select(ReferenceDraft).where(ReferenceDraft.source_uid == email.uid)
+        ).scalar_one_or_none()
+        if existing is not None:
+            # Already drafted for this mail (e.g. a prior run committed the
+            # reference but failed before mark_processed). Don't append again.
+            return existing.content
         content = self.provider.generate_draft(email, style_examples)
         subject = email.subject
         if not subject.lower().startswith("re:"):
