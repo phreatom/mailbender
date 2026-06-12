@@ -24,6 +24,7 @@ class Runner:
         self.draft_generator = DraftGenerator(provider, imap, session)
         self.indexer = Indexer(provider, session)
         self.audit = AuditLogger(session)
+        self.provider_name = type(provider).__name__
 
     def run_main(self):
         for email in self.imap.fetch_inbox():
@@ -41,6 +42,8 @@ class Runner:
                 moved = self.mover.maybe_move(email.uid, category)
                 self.repo.record_run_step("main", email.uid, "move",
                                           "success" if moved else "skipped")
+                if moved:
+                    self.audit.record("scheduler", "mail_moved", email.uid)
                 drafted = False
                 if category == self.reply_category:
                     self.draft_generator.generate(email, self.style_examples)
@@ -57,11 +60,14 @@ class Runner:
                 self.repo.record_run_step("main", email.uid, "process", "error")
                 continue
         self.repo.record_run_step("main", None, "run", "success")
+        self.audit.record("scheduler", "provider_use", self.provider_name)
 
     def run_style(self):
         StyleLearner(self.imap, self.session).bootstrap()
         self.repo.record_run_step("style", None, "run", "success")
+        self.audit.record("scheduler", "provider_use", self.provider_name)
 
     def run_feedback(self):
         FeedbackLearner(self.imap, self.session).run()
         self.repo.record_run_step("feedback", None, "run", "success")
+        self.audit.record("scheduler", "provider_use", self.provider_name)

@@ -79,3 +79,21 @@ def test_main_run_records_history_steps(session):
     assert {"classify", "prioritize", "index", "move", "draft", "run"} <= steps
     marker = [r for r in rows if r.step == "run"]
     assert len(marker) == 1 and marker[0].run_type == "main"
+
+
+def test_main_run_audits_provider_use_and_move(session):
+    from sqlalchemy import select
+    from mailbender.store.models import AuditLog
+    inbox = [Email(uid="1", subject="Frage", sender="a@b.c", body="?",
+                   message_id="<m1>")]
+    imap = FakeImap(inbox)
+    provider = FakeLLMProvider(category="Newsletter", priority="low")
+    runner = Runner(
+        imap=imap, provider=provider, session=session,
+        categories=["Newsletter"], mapping={"Newsletter": "Archive/News"},
+        reply_category="Antwort nötig", style_examples=[],
+    )
+    runner.run_main()
+    actions = [r.action for r in session.execute(select(AuditLog)).scalars().all()]
+    assert "mail_moved" in actions
+    assert "provider_use" in actions
