@@ -31,3 +31,10 @@ def test_fake_chat_returns_answer_with_sources():
     provider = FakeLLMProvider(chat_answer="Sarah said yes.")
     answer = provider.chat("What did Sarah say?", context=["Sarah: yes"])
     assert "Sarah" in answer
+
+
+def test_fake_chat_accepts_history():
+    from mailbender.llm.fake import FakeLLMProvider
+    p = FakeLLMProvider(chat_answer="A")
+    assert p.chat("q", ["ctx"], history=[("user", "x")]) == "A"
+    assert p.chat("q", []) == "Keine passende Information gefunden."

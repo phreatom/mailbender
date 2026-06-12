@@ -59,6 +59,9 @@ class OpenAIProvider:
             return list(resp.data[0].embedding)
         return retry(call, sleep=time.sleep)
 
-    def chat(self, question: str, context: list[str]) -> str:
-        return self._chat(CHAT_PROMPT.format(
+    def chat(self, question: str, context: list[str], history=None) -> str:
+        convo = ""
+        if history:
+            convo = "\n".join(f"{role}: {text}" for role, text in history) + "\n\n"
+        return self._chat(convo + CHAT_PROMPT.format(
             context="\n\n".join(context), question=question))
