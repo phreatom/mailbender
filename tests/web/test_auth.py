@@ -19,6 +19,20 @@ def make_client(password="hunter2"):
     return TestClient(app)
 
 
+def test_root_redirects_to_app():
+    c = make_client()
+    r = c.get("/", follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/app"
+
+
+def test_root_unauthenticated_lands_on_login():
+    c = make_client()
+    r = c.get("/")  # / -> /app -> (session gate) -> /login
+    assert r.status_code == 200
+    assert "password" in r.text.lower()
+
+
 def test_login_page_renders():
     c = make_client()
     r = c.get("/login")
