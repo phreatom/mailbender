@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import String, Integer, DateTime, Text, ForeignKey, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 
 
@@ -88,6 +88,8 @@ class Conversation(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(255), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    messages: Mapped[list["ChatMessage"]] = relationship(
+        order_by="ChatMessage.id", cascade="all, delete-orphan")
 
 
 class ChatMessage(Base):
