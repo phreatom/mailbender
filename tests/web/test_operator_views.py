@@ -95,3 +95,19 @@ def test_category_add_rejected_without_csrf(monkeypatch):
     c, repo = client_and_repo(monkeypatch)
     r = c.post("/app/operator/categories/add", data={"name": "X"})
     assert r.status_code == 403
+
+
+def test_category_remove_rejected_without_csrf(monkeypatch):
+    c, repo = client_and_repo(monkeypatch)
+    assert c.post("/app/operator/categories/remove", data={"name": "X"}).status_code == 403
+
+
+def test_mapping_add_rejected_without_csrf(monkeypatch):
+    c, repo = client_and_repo(monkeypatch)
+    assert c.post("/app/operator/mappings/add",
+                  data={"category": "X", "folder": "F"}).status_code == 403
+
+
+def test_mapping_remove_rejected_without_csrf(monkeypatch):
+    c, repo = client_and_repo(monkeypatch)
+    assert c.post("/app/operator/mappings/remove", data={"category": "X"}).status_code == 403

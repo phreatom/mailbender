@@ -59,21 +59,20 @@ def register_operator_routes(app, templates, require_web_session):
         return templates.TemplateResponse(
             request, "operator/_priorities.html", _priorities_ctx(request))
 
+    def _require_csrf(request, token):
+        if not request.app.state.web_security.valid_csrf(token):
+            raise HTTPException(status_code=403)
+
     @app.post("/app/operator/run", dependencies=[Depends(require_web_session)])
     def trigger_run(request: Request, run_type: str = Form("main"),
                     csrf_token: str = Form("")):
-        if not request.app.state.web_security.valid_csrf(csrf_token):
-            raise HTTPException(status_code=403)
+        _require_csrf(request, csrf_token)
         if run_type not in _VALID_RUN:
             raise HTTPException(status_code=422)
         _audit(request, "run_triggered", run_type)
         runner = request.app.state.runner_factory()
         getattr(runner, f"run_{run_type}")()
         return Response(status_code=204)
-
-    def _require_csrf(request, token):
-        if not request.app.state.web_security.valid_csrf(token):
-            raise HTTPException(status_code=403)
 
     @app.get("/app/operator/runs", response_class=HTMLResponse,
              dependencies=[Depends(require_web_session)])
@@ -111,8 +110,9 @@ def register_operator_routes(app, templates, require_web_session):
     def category_remove(request: Request, name: str = Form(...),
                         csrf_token: str = Form("")):
         _require_csrf(request, csrf_token)
-        request.app.state.repo_factory().remove_category(name)
-        _audit(request, "category_remove", name)
+        removed = request.app.state.repo_factory().remove_category(name)
+        _audit(request, "category_remove", name,
+               result="success" if removed else "skipped")
         return RedirectResponse("/app/operator/categories", status_code=303)
 
     @app.get("/app/operator/mappings", response_class=HTMLResponse,
@@ -129,7 +129,7 @@ def register_operator_routes(app, templates, require_web_session):
                     folder: str = Form(...), csrf_token: str = Form("")):
         _require_csrf(request, csrf_token)
         request.app.state.repo_factory().add_mapping(category, folder)
-        _audit(request, "mapping_add", category)
+        _audit(request, "mapping_add", f"{category} -> {folder}")
         return RedirectResponse("/app/operator/mappings", status_code=303)
 
     @app.post("/app/operator/mappings/remove",
@@ -137,6 +137,7 @@ def register_operator_routes(app, templates, require_web_session):
     def mapping_remove(request: Request, category: str = Form(...),
                        csrf_token: str = Form("")):
         _require_csrf(request, csrf_token)
-        request.app.state.repo_factory().remove_mapping(category)
-        _audit(request, "mapping_remove", category)
+        removed = request.app.state.repo_factory().remove_mapping(category)
+        _audit(request, "mapping_remove", category,
+               result="success" if removed else "skipped")
         return RedirectResponse("/app/operator/mappings", status_code=303)
