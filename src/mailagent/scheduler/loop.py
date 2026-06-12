@@ -32,7 +32,13 @@ def run_loop(build_runner_fn, intervals, *, clock=datetime.utcnow,
         now = clock()
         for run_type, minutes in intervals.items():
             if _due(runner.repo.last_run_at(run_type), now, minutes):
-                _DISPATCH[run_type](runner)
+                try:
+                    _DISPATCH[run_type](runner)
+                except Exception:
+                    # A run-level failure (e.g. IMAP down after retries) must
+                    # never kill the loop. No success marker is written, so the
+                    # next cycle simply retries this run type.
+                    continue
         cycles += 1
         if max_cycles is None or cycles < max_cycles:
             sleep(tick_seconds)

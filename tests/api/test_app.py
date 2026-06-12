@@ -145,3 +145,17 @@ def test_mapping_endpoints():
     assert client.get("/mappings", headers=h).json() == [{"category": "N", "folder": "F"}]
     delete = client.request("DELETE", "/mappings/N", headers=h)
     assert delete.json() == {"removed": True}
+
+
+def test_all_protected_endpoints_require_auth():
+    client = TestClient(create_app(api_token="t"))
+    assert client.get("/categories").status_code == 401
+    assert client.post("/run").status_code == 401
+    assert client.get("/priorities").status_code == 401
+    assert client.get("/history").status_code == 401
+    assert client.get("/audit").status_code == 401
+    assert client.get("/mappings").status_code == 401
+    assert client.post("/mappings", json={"category": "N", "folder": "F"}).status_code == 401
+    assert client.request("DELETE", "/mappings/N").status_code == 401
+    # /health stays public
+    assert client.get("/health").status_code == 200

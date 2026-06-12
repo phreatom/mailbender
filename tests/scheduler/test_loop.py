@@ -60,3 +60,32 @@ def test_run_loop_first_run_fires_all_enabled():
         max_cycles=1,
     )
     assert runner.dispatched == ["main", "feedback"]  # style disabled (0)
+
+
+def test_run_loop_survives_dispatch_failure():
+    now = datetime(2026, 6, 12, 12, 0, 0)
+
+    class ExplodingRunner:
+        def __init__(self):
+            self.repo = FakeRepo(last={})
+            self.dispatched = []
+
+        def run_main(self):
+            raise RuntimeError("imap down")
+
+        def run_feedback(self):
+            self.dispatched.append("feedback")
+
+        def run_style(self):
+            self.dispatched.append("style")
+
+    runner = ExplodingRunner()
+    # Should not raise even though run_main blows up; feedback still fires.
+    run_loop(
+        build_runner_fn=lambda: runner,
+        intervals={"main": 15, "feedback": 60, "style": 0},
+        clock=lambda: now,
+        sleep=lambda s: None,
+        max_cycles=1,
+    )
+    assert runner.dispatched == ["feedback"]
