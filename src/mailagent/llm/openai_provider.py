@@ -1,4 +1,7 @@
+import time
+
 from mailagent.llm.provider import Email
+from mailagent.util.retry import retry
 
 CLASSIFY_PROMPT = (
     "Classify this email into exactly one of these categories: {categories}.\n"
@@ -27,11 +30,13 @@ class OpenAIProvider:
         self.embed_model = embed_model
 
     def _chat(self, prompt: str) -> str:
-        resp = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return resp.choices[0].message.content.strip()
+        def call():
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return resp.choices[0].message.content.strip()
+        return retry(call, sleep=time.sleep)
 
     def classify(self, email: Email, categories: list[str]) -> str:
         return self._chat(CLASSIFY_PROMPT.format(
@@ -48,8 +53,11 @@ class OpenAIProvider:
             subject=email.subject, body=email.body))
 
     def embed(self, text: str) -> list[float]:
-        resp = self.client.embeddings.create(model=self.embed_model, input=text)
-        return list(resp.data[0].embedding)
+        def call():
+            resp = self.client.embeddings.create(
+                model=self.embed_model, input=text)
+            return list(resp.data[0].embedding)
+        return retry(call, sleep=time.sleep)
 
     def chat(self, question: str, context: list[str]) -> str:
         return self._chat(CHAT_PROMPT.format(
