@@ -49,23 +49,40 @@ cadence (minutes): `MAILBENDER_SCHEDULE_MINUTES` (main), `MAILBENDER_FEEDBACK_MI
 `MAILBENDER_STYLE_MINUTES`. A value of `0` disables automatic runs for that type
 (style learning defaults to `0` = manual/CLI only).
 
-## CLI
+## CLI (thin client)
+
+Install on your machine — no server stack required:
 
 ```bash
-docker compose exec app mailbender --help
-docker compose exec app mailbender scheduler          # run the loop in foreground
-docker compose exec app mailbender run                # one main pass now
-docker compose exec app mailbender run-style          # bootstrap style from Sent
-docker compose exec app mailbender run-feedback       # draft-vs-sent feedback pass
-docker compose exec app mailbender chat "What did Sarah say about the budget?"
-docker compose exec app mailbender priorities         # mail by priority (high first)
-docker compose exec app mailbender history            # recent run history
-docker compose exec app mailbender audit              # recent audit-log entries
-docker compose exec app mailbender categories         # list categories
-docker compose exec app mailbender add-mapping Newsletter Archive/News
-docker compose exec app mailbender mappings
-docker compose exec app mailbender remove-mapping Newsletter
+uv tool install mailbender      # or: pipx install mailbender
+mailbender login                # prompts for API URL + token; writes ~/.config/mailbender/config.toml (chmod 600)
 ```
+
+URL/token resolution order is **flag > env (`MAILBENDER_API_URL` / `MAILBENDER_API_TOKEN`) > config file**.
+
+```bash
+mailbender status                            # resolved url, whether a token is set, reachability
+mailbender chat "What did Sarah say?"
+mailbender run --type main|style|feedback     # default main
+mailbender priorities
+mailbender history --limit 50
+mailbender audit --limit 50
+mailbender categories list|add NAME|remove NAME|seed
+mailbender mappings list|add CATEGORY FOLDER|remove CATEGORY
+mailbender logout
+```
+
+Add `--json` to any command for machine-readable output (JSON to stdout). `--url`/`--token` override config; `--verbose` shows tracebacks.
+
+### Server administration
+
+Server-only operations run inside the container (full stack via the `[server]` extra):
+
+```bash
+docker compose exec scheduler mailbender-server scheduler   # the periodic loop (already the scheduler service)
+```
+
+Migrations run automatically from the container entrypoint.
 
 ## Audit log
 
