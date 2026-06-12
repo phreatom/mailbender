@@ -74,9 +74,9 @@ class ImapClient:
         msg.set_content(body)
         target = folder or self.drafts_folder
         with self._connect() as c:
-            c.append(target, msg.as_bytes())
+            retry(lambda: c.append(target, msg.as_bytes()), sleep=time.sleep)
 
     def move(self, uid: str, target_folder: str, source_folder="INBOX"):
         with self._connect() as c:
             c.select_folder(source_folder)
-            c.move([int(uid)], target_folder)
+            retry(lambda: c.move([int(uid)], target_folder), sleep=time.sleep)
