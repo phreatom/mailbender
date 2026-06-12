@@ -50,3 +50,24 @@ def test_schedule_intervals_from_env(monkeypatch):
     cfg = load_config()
     assert cfg.feedback_minutes == 30
     assert cfg.style_minutes == 1440
+
+
+def test_api_token_from_env(monkeypatch):
+    monkeypatch.setenv("MAILBENDER_DATABASE_URL", "postgresql+psycopg://u:p@localhost/db")
+    monkeypatch.setenv("MAILBENDER_IMAP_HOST", "h")
+    monkeypatch.setenv("MAILBENDER_IMAP_USER", "u")
+    monkeypatch.setenv("MAILBENDER_IMAP_PASSWORD", "p")
+    monkeypatch.setenv("MAILBENDER_API_TOKEN", "secret-token")
+    from mailbender.config import load_config
+    cfg = load_config()
+    assert cfg.api_token.get_secret_value() == "secret-token"
+
+
+def test_api_token_defaults_none(monkeypatch):
+    monkeypatch.setenv("MAILBENDER_DATABASE_URL", "postgresql+psycopg://u:p@localhost/db")
+    monkeypatch.setenv("MAILBENDER_IMAP_HOST", "h")
+    monkeypatch.setenv("MAILBENDER_IMAP_USER", "u")
+    monkeypatch.setenv("MAILBENDER_IMAP_PASSWORD", "p")
+    from mailbender.config import load_config
+    cfg = load_config()
+    assert cfg.api_token is None
