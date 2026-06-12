@@ -139,5 +139,22 @@ def chat(question: str):
             typer.echo(f"  [{s.uid}] {s.subject}")
 
 
+@app.command()
+def history(limit: int = 50):
+    """Show recent run history."""
+    repo = _make_repo()
+    for r in repo.recent_runs(limit):
+        typer.echo(f"{r.run_type:8} {str(r.uid):8} {r.step:10} "
+                   f"{r.result:8} {r.detail}")
+
+
+@app.command()
+def audit(limit: int = 50):
+    """Show recent audit-log entries."""
+    repo = _make_repo()
+    for r in repo.recent_audit(limit):
+        typer.echo(f"{r.actor:10} {r.action:16} {r.target:12} {r.result}")
+
+
 if __name__ == "__main__":
     app()

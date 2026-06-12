@@ -153,3 +153,37 @@ def test_chat_command(monkeypatch):
     assert result.exit_code == 0
     assert "Sarah approved it." in result.stdout
     assert "1" in result.stdout
+
+
+def test_history_command(monkeypatch):
+    from mailagent.cli import main
+
+    class Row:
+        run_type = "main"; uid = "1"; step = "classify"
+        result = "success"; detail = "Newsletter"
+
+    class FakeRepo:
+        def recent_runs(self, limit=50):
+            return [Row()]
+
+    monkeypatch.setattr(main, "_make_repo", lambda: FakeRepo())
+    result = runner.invoke(app, ["history"])
+    assert result.exit_code == 0
+    assert "classify" in result.stdout
+
+
+def test_audit_command(monkeypatch):
+    from mailagent.cli import main
+
+    class Row:
+        actor = "scheduler"; action = "draft_append"
+        target = "uid-1"; result = "success"
+
+    class FakeRepo:
+        def recent_audit(self, limit=50):
+            return [Row()]
+
+    monkeypatch.setattr(main, "_make_repo", lambda: FakeRepo())
+    result = runner.invoke(app, ["audit"])
+    assert result.exit_code == 0
+    assert "draft_append" in result.stdout
