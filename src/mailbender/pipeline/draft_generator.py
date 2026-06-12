@@ -12,7 +12,7 @@ class DraftGenerator:
     def generate(self, email: Email, style_examples: list[str]) -> str:
         existing = self.session.execute(
             select(ReferenceDraft).where(ReferenceDraft.source_uid == email.uid)
-        ).scalar_one_or_none()
+        ).scalars().first()
         if existing is not None:
             # Already drafted for this mail (e.g. a prior run committed the
             # reference but failed before mark_processed). Don't append again.

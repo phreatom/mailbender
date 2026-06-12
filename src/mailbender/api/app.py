@@ -7,7 +7,12 @@ def _audit(app, actor, action, target="", result="success"):
     factory = app.state.repo_factory
     if factory is None:
         return
-    AuditLogger(factory().session).record(actor, action, target, result)
+    try:
+        AuditLogger(factory().session).record(actor, action, target, result)
+    except Exception:
+        # Audit is best-effort: a logging failure must never alter the HTTP
+        # response (e.g. turn a 401 into a 500) or abort the underlying action.
+        pass
 
 
 def create_app(api_token: str) -> FastAPI:

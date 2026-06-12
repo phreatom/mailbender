@@ -45,7 +45,7 @@ class StyleExample(Base):
 class ReferenceDraft(Base):
     __tablename__ = "reference_draft"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_uid: Mapped[str] = mapped_column(String(255), index=True)
+    source_uid: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     message_id: Mapped[str] = mapped_column(String(512), index=True)
     content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

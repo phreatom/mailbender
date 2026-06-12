@@ -239,3 +239,26 @@ def test_run_endpoint_is_audited(monkeypatch):
     resp = client.post("/run", headers={"Authorization": "Bearer t"})
     assert resp.status_code == 200
     assert ("web", "run_triggered", "main") in recorded
+
+
+def test_audit_failure_does_not_break_response(monkeypatch):
+    # If the audit write itself errors, the endpoint's response must be
+    # unchanged (a 401 stays a 401, not a 500).
+    import mailbender.api.app as appmod
+    app = create_app(api_token="t")
+
+    class ExplodingAuditor:
+        def __init__(self, session):
+            pass
+
+        def record(self, *a, **k):
+            raise RuntimeError("audit db down")
+
+    class FakeRepo:
+        session = object()
+
+    app.state.repo_factory = lambda: FakeRepo()
+    monkeypatch.setattr(appmod, "AuditLogger", ExplodingAuditor)
+    client = TestClient(app)
+    resp = client.get("/categories")  # no token -> 401, audit will explode
+    assert resp.status_code == 401

@@ -1,4 +1,5 @@
-from sqlalchemy.orm import scoped_session, sessionmaker
+import warnings
+from sqlalchemy.orm import sessionmaker
 from mailbender.config import load_config
 from mailbender.store.db import make_engine
 from mailbender.store.repository import Repository
@@ -33,26 +34,33 @@ def _build_runner(cfg, session):
 def production_app():
     """Zero-arg app factory for `uvicorn --factory`.
 
-    Reads Config, wires the API's injected factories to a request-scoped
-    session, and removes the session after each request so connections don't
-    leak. This is the production entrypoint; tests use create_app directly.
+    Reads Config and wires the API's injected factories. Each factory opens a
+    fresh Session per call (so no session state leaks across requests); the
+    Session and its pooled connection are released when the per-request
+    repo/runner/chat object is dereferenced after the response. This is correct
+    for the single-user, low-concurrency self-hosted deployment.
+
+    KNOWN LIMITATION / FOLLOW-UP: there is no *deterministic* per-request
+    session teardown. A `scoped_session` + middleware approach does not work
+    here because FastAPI runs sync routes in a worker thread while middleware
+    runs on the event loop, so the thread-local scope is never cleaned in the
+    right place (verified empirically). The correct fix is to make the session a
+    request dependency (`Depends(get_session)`) and have endpoints pass it to
+    the factories — that evolves the zero-arg factory seam and is tracked as a
+    follow-up task. Run with a single uvicorn worker until then.
     """
     cfg = load_config()
     engine = make_engine(cfg.database_url)
-    SessionLocal = scoped_session(
-        sessionmaker(bind=engine, expire_on_commit=False))
+    SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
     token = cfg.api_token.get_secret_value() if cfg.api_token else ""
+    if not token:
+        warnings.warn(
+            "MAILBENDER_API_TOKEN is unset; the API will reject every request. "
+            "Set it to enable authenticated access.")
     app = create_app(api_token=token)
 
     app.state.repo_factory = lambda: Repository(SessionLocal())
     app.state.chat_factory = lambda: _build_chat(cfg, SessionLocal())
     app.state.runner_factory = lambda: _build_runner(cfg, SessionLocal())
-
-    @app.middleware("http")
-    async def _remove_session(request, call_next):
-        try:
-            return await call_next(request)
-        finally:
-            SessionLocal.remove()
 
     return app
