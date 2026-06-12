@@ -42,4 +42,16 @@ def create_app(api_token: str) -> FastAPI:
     def audit(limit: int = 50):
         return routes.recent_audit(app.state.repo_factory(), limit)
 
+    @app.get("/mappings", dependencies=[Depends(require_auth)])
+    def list_mappings():
+        return routes.list_mappings(app.state.repo_factory())
+
+    @app.post("/mappings", dependencies=[Depends(require_auth)])
+    def add_mapping(category: str = Body(...), folder: str = Body(...)):
+        return routes.add_mapping(app.state.repo_factory(), category, folder)
+
+    @app.delete("/mappings/{category}", dependencies=[Depends(require_auth)])
+    def remove_mapping(category: str):
+        return routes.remove_mapping(app.state.repo_factory(), category)
+
     return app

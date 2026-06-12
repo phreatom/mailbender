@@ -116,3 +116,32 @@ def test_history_and_audit_endpoints():
     a = client.get("/audit", headers={"Authorization": "Bearer t"})
     assert a.status_code == 200
     assert a.json()[0]["action"] == "draft_append"
+
+
+def test_mapping_endpoints():
+    app = create_app(api_token="t")
+    store = {}
+
+    class M:
+        def __init__(self, c, f):
+            self.category_name = c; self.target_folder = f
+
+    class FakeRepo:
+        def list_mappings(self):
+            return [M(c, f) for c, f in store.items()]
+
+        def add_mapping(self, c, f):
+            store[c] = f
+
+        def remove_mapping(self, c):
+            return store.pop(c, None) is not None
+
+    app.state.repo_factory = lambda: FakeRepo()
+    client = TestClient(app)
+    h = {"Authorization": "Bearer t"}
+    assert client.get("/mappings", headers=h).json() == []
+    post = client.post("/mappings", json={"category": "N", "folder": "F"}, headers=h)
+    assert post.status_code == 200
+    assert client.get("/mappings", headers=h).json() == [{"category": "N", "folder": "F"}]
+    delete = client.request("DELETE", "/mappings/N", headers=h)
+    assert delete.json() == {"removed": True}
