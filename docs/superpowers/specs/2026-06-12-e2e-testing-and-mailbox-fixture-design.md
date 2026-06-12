@@ -24,6 +24,9 @@ This milestone adds:
 3. A **pipeline e2e suite** — seed a real mailbox, run the agent passes against
    real Postgres, assert outcomes in the DB **and** IMAP folders.
 4. An **exploratory seed command** — `mailbender-server seed-fixture`.
+5. An **opt-in real-LLM prompt-verification e2e** — the same corpus driven through
+   a real (OpenAI-compatible) model to verify the prompts themselves, judged by an
+   LLM, gated out of CI by a `real_llm` marker.
 
 ## Design decisions (settled in brainstorming)
 
@@ -172,6 +175,95 @@ README gains a short "Exploratory testing" section.
 - GreenMail stays (supports `APPEND` and multiple folders). No new container; the
   e2e suite reuses the existing `docker-compose.test.yml` services.
 
+### 7. Real-LLM prompt-verification e2e (opt-in)
+
+Sections 1–6 prove the **pipeline** works, but by design the `RuleBasedProvider`
+never exercises the actual prompts in `llm/openai_provider.py` (`CLASSIFY_PROMPT`,
+`PRIORITY_PROMPT`, `DRAFT_PROMPT`, `CHAT_PROMPT`). Whether those prompts elicit
+correct behavior from a *real* model is the one thing the fake brain structurally
+cannot test. This section adds a separate, **opt-in** e2e layer that drives a real
+LLM to verify the prompts themselves — run deliberately, never on every commit.
+
+It is a confidence/regression check on prompt wording, not a CI gate: real-model
+output is non-deterministic, costs tokens, and needs an API key.
+
+#### 7a. Configurable OpenAI-compatible provider
+
+Extend `make_provider` / `OpenAIProvider` to accept a `base_url` so the same code
+path drives OpenAI, a local server (Ollama / vLLM / LM Studio), or any
+OpenAI-compatible gateway. The OpenAI SDK already supports `base_url`, so this is
+a thin thread-through, **not** a new provider integration. The test reads three
+environment variables:
+
+- `MAILBENDER_LLM_BASE_URL` — endpoint (optional; defaults to OpenAI's).
+- `MAILBENDER_LLM_MODEL` — model id (e.g. `gpt-4o-mini`, a local model name).
+- `MAILBENDER_LLM_API_KEY` — API key for the endpoint.
+
+`make_provider("openai", api_key, base_url=…, model=…)` constructs
+`OpenAIProvider(client=OpenAI(api_key=…, base_url=…), model=…)`. When `base_url`
+is unset the behavior is unchanged from today.
+
+#### 7b. Reuses the existing corpus and loader
+
+No new fixture mechanism. The test seeds GreenMail with the **same**
+`fixtures/mailbox.yaml` via `MailboxFixture` (Sections 2–3), then runs the real
+`Runner` passes with the **`OpenAIProvider`** swapped in for the
+`RuleBasedProvider`, against the same real Postgres + IMAP. Only the brain and the
+assertion strategy change.
+
+To bound token cost and flakiness, the suite drives a **small curated subset** of
+the corpus — a few *unambiguous* emails per pass (clear-cut category/priority,
+one obviously reply-worthy email) — selected by a marker/tag in the manifest or a
+hardcoded subject allow-list. It does not run the full corpus through the real
+model.
+
+#### 7c. LLM-as-judge assertions, with a structural pre-gate
+
+Real output cannot be byte-compared against `expect` labels. Assertions run in two
+stages:
+
+1. **Structural pre-gate (free, deterministic):** category ∈ the allowed set;
+   priority ∈ `{high, medium, low}`; draft non-empty and references the email's
+   subject. Catches malformed/off-spec output and fails fast **before** spending
+   judge tokens.
+2. **LLM-as-judge:** a second call (same configurable endpoint) is given the
+   email, the model's output, and the manifest's `expect` label, and grades
+   whether the output is *reasonable* — returning a structured `{pass, rationale}`
+   (forced via a strict prompt / parsed defensively). On failure the assertion
+   message surfaces the judge's rationale so a real prompt regression is legible,
+   not just a red bar.
+
+The judge handles fuzzy outputs (especially drafts) that exact matching cannot,
+at the cost of a second non-deterministic call — acceptable because this layer is
+opt-in and diagnostic.
+
+#### 7d. CI gating — `real_llm` marker + auto-skip
+
+Two independent guards, so the test is excluded from normal CI **without any
+`.github/workflows/ci.yml` change**:
+
+- **Marker, deselected by default.** Register a `real_llm` marker in
+  `pyproject.toml` and set `addopts = -m "not real_llm"`. Plain `pytest` (locally
+  and in the existing CI job, which runs `pytest -v`) never collects these tests.
+- **Auto-skip without config.** Each test `pytest.skip()`s when
+  `MAILBENDER_LLM_MODEL` / `MAILBENDER_LLM_API_KEY` are absent, so even an
+  explicit `pytest -m real_llm` degrades gracefully on a machine without
+  credentials.
+
+Running it locally is an explicit opt-in:
+
+```bash
+MAILBENDER_LLM_MODEL=gpt-4o-mini \
+MAILBENDER_LLM_API_KEY=sk-… \
+pytest -m real_llm
+```
+
+(Optionally add `MAILBENDER_LLM_BASE_URL=…` to target a local or alternative
+endpoint.) Because the existing CI never sets these secrets *and* the marker is
+deselected, the layer is doubly excluded by default; a future opt-in workflow
+(manual/nightly, injecting a key from repo secrets and running `-m real_llm`) can
+be added without touching this design.
+
 ## Data flow
 
 `corpus YAML → MailboxFixture.load → IMAP APPEND (Inbox/Sent/Drafts) → Runner
@@ -208,12 +300,19 @@ Runner, driven by `seed-fixture` + a normal agent run instead of test assertions
   honors `--manifest`.
 - The full suite stays green; the new e2e tests run under the existing
   `pytest-docker` services.
+- **Real-LLM e2e (Section 7):** excluded from the default run and from CI by the
+  `real_llm` marker; verified manually by running `pytest -m real_llm` against a
+  configured endpoint. The structural pre-gate and the `base_url` thread-through
+  get ordinary unit coverage (deterministic, no network) so the non-LLM parts of
+  the layer stay green in CI.
 
 ## Deliberately excluded (later milestones)
 
 - **API/HTTP e2e** and **browser (Playwright) e2e** — scoped to pipeline e2e here;
   the shared fixture is the foundation those later layers will build on.
-- **Recorded real-LLM cassettes** — rejected in favor of the rule-based brain.
+- **Recorded real-LLM cassettes** — rejected in favor of the rule-based brain for
+  the *default* suite. Live real-LLM prompt verification is **in scope** as an
+  opt-in layer (Section 7), gated out of CI by the `real_llm` marker.
 - **Performance / load testing.**
 - **Web UI exploratory wiring** — the seed command is mail-client/agent oriented;
   pointing the (future) web UI at the seeded mailbox is just configuration.
