@@ -34,3 +34,12 @@ class Repository:
 
     def list_categories(self):
         return self.session.execute(select(Category)).scalars().all()
+
+    def remove_category(self, name: str) -> bool:
+        stmt = select(Category).where(Category.name == name)
+        category = self.session.execute(stmt).scalar_one_or_none()
+        if category is None:
+            return False
+        self.session.delete(category)
+        self.session.commit()
+        return True
