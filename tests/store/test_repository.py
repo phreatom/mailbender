@@ -28,3 +28,15 @@ def test_add_and_list_categories(repo):
     repo.add_category("Rechnung", "Invoices and bills")
     names = [c.name for c in repo.list_categories()]
     assert "Rechnung" in names
+
+
+def test_remove_category(repo):
+    repo.add_category("Werbung", "Ads")
+    assert "Werbung" in [c.name for c in repo.list_categories()]
+    removed = repo.remove_category("Werbung")
+    assert removed is True
+    assert "Werbung" not in [c.name for c in repo.list_categories()]
+
+
+def test_remove_missing_category_returns_false(repo):
+    assert repo.remove_category("DoesNotExist") is False
