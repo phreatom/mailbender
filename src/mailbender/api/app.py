@@ -45,9 +45,11 @@ def create_app(api_token: str) -> FastAPI:
         return routes.chat_answer(chat_obj, question)
 
     @app.post("/run", dependencies=[Depends(require_auth)])
-    def run():
-        _audit(app, "web", "run_triggered", "main")
-        return routes.run_main(app.state.runner_factory())
+    def run(run_type: str = Body("main", embed=True)):
+        if run_type not in routes.RUN_TYPES:
+            raise HTTPException(status_code=422, detail="invalid run_type")
+        _audit(app, "web", "run_triggered", run_type)
+        return routes.run(app.state.runner_factory(), run_type)
 
     @app.get("/priorities", dependencies=[Depends(require_auth)])
     def priorities():

@@ -10,9 +10,17 @@ def chat_answer(chat, question: str) -> dict:
     }
 
 
-def run_main(runner) -> dict:
-    runner.run_main()
-    return {"status": "ok"}
+RUN_TYPES = {"main", "style", "feedback"}
+
+
+def run(runner, run_type: str = "main") -> dict:
+    dispatch = {
+        "main": "run_main",
+        "style": "run_style",
+        "feedback": "run_feedback",
+    }
+    getattr(runner, dispatch[run_type])()
+    return {"status": "ok", "run_type": run_type}
 
 
 def _iso(dt):
